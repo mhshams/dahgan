@@ -3,7 +3,7 @@
 
     <groupId>io.dahgan</groupId>
     <artifactId>dahgan</artifactId>
-    <version>0.2.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <packaging>jar</packaging>
 
     <name>Greeting - A Sample Kotlin App</name>
