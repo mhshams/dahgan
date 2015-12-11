@@ -326,7 +326,7 @@ data class State(
         val lineChar: Int, // Character number in line.
         val code: Code, // Of token we are collecting chars for.
         val last: Int, // Last matched character.
-        val input: List<Chr>, // The decoded input characters.
+        val input: List<UniChar>, // The decoded input characters.
         val yields: MutableMap<String, Any> // The replies that are stored for future use.
 ) {
     override fun toString() = name
@@ -667,7 +667,7 @@ fun oom(parser: Parser): Parser = parser.and(zom(parser))
 fun decide(left: Parser, right: Parser): Parser = Parser { state ->
     fun decideParser(point: State, tokens: Sequence<Token>, left: Parser, right: Parser): Parser = Parser { state ->
         val reply = left(state)
-        val newTokens = tokens.plus(reply.tokens)
+        val newTokens = tokens + reply.tokens
         when (reply.result) {
             is Result.Failed -> Reply(Result.More(right), emptySequence(), null, point)
             is Result.Completed -> reply.copy(tokens = newTokens)
@@ -717,7 +717,7 @@ fun prev(parser: Parser): Parser = Parser { state ->
             is Result.More -> prevParser(point, reply.result.result, reply.state)
         }
     }
-    prevParser(state, parser, state.copy(isPeek = true, input = listOf(Chr(-1, state.last)).plus(state.input)))
+    prevParser(state, parser, state.copy(isPeek = true, input = listOf(UniChar(-1, state.last)) + state.input))
 }
 
 /**
@@ -815,7 +815,7 @@ fun nextIf(test: (Int) -> Boolean): Parser {
     fun consumeNextIf(state: State): Reply {
         return if (!state.input.isEmpty() && test(state.input[0].code)) {
             val char = state.input[0].code
-            val chars = if (state.isPeek) IntArray(0) else intArrayOf(char).plus(state.chars)
+            val chars = if (state.isPeek) IntArray(0) else intArrayOf(char) + state.chars
 
             val byteOffset = if (state.isPeek) -1 else if (state.chars.isEmpty()) state.byteOffset else state.charsByteOffset
             val charOffset = if (state.isPeek) -1 else if (state.chars.isEmpty()) state.charOffset else state.charsCharOffset
@@ -886,7 +886,7 @@ class PatternTokenizer(val pattern: Parser) : Tokenizer() {
             return when (reply.result) {
                 is Result.Failed -> errorTokens(tokens, rState, reply.result.message as String, withFollowing)
                 is Result.Completed -> tokens
-                is Result.More -> tokens.plus(patternParser(reply.result.result, rState))
+                is Result.More -> tokens + patternParser(reply.result.result, rState)
             }
         }
 
@@ -910,9 +910,9 @@ class ParserTokenizer(val what: String, val parser: Parser) : Tokenizer() {
 
             return when (reply.result) {
                 is Result.Failed -> errorTokens(tokens, rState, reply.result.message as String, withFollowing)
-                is Result.Completed -> tokens.plus(Token(rState.byteOffset, rState.charOffset, rState.line,
-                        rState.lineChar, Code.Detected, Token.TextWrapper("$what=${reply.result.result}")))
-                is Result.More -> tokens.plus(parserParser(reply.result.result, rState))
+                is Result.Completed -> tokens + Token(rState.byteOffset, rState.charOffset, rState.line,
+                        rState.lineChar, Code.Detected, Token.TextWrapper("$what=${reply.result.result}"))
+                is Result.More -> tokens + parserParser(reply.result.result, rState)
             }
         }
 
@@ -926,12 +926,12 @@ class ParserTokenizer(val what: String, val parser: Parser) : Tokenizer() {
  * also appends the unparsed text following the error as a final Unparsed token.
  */
 fun errorTokens(tokens: Sequence<Token>, state: State, message: String, flag: Boolean): Sequence<Token> {
-    val newTokens = tokens.plus(sequenceOf(Token(state.byteOffset, state.charOffset, state.line, state.lineChar,
-            Code.Error, Token.TextWrapper(message))))
+    val newTokens = tokens + sequenceOf(Token(state.byteOffset, state.charOffset, state.line, state.lineChar,
+            Code.Error, Token.TextWrapper(message)))
 
     return if (flag && state.input.isNotEmpty())
-        newTokens.plus(sequenceOf(Token(state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Unparsed,
-                Token.ArrayWrapper(state.input.map { it.code }.toIntArray()))))
+        newTokens + sequenceOf(Token(state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Unparsed,
+                Token.ArrayWrapper(state.input.map { it.code }.toIntArray())))
     else
         newTokens
 }
@@ -946,8 +946,8 @@ fun commitBugs(reply: Reply): Sequence<Token> {
     return if (reply.commit == null)
         tokens
     else
-        tokens.plus(listOf(Token(state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Error,
-                Token.TextWrapper("Commit to '${reply.commit}' was made outside it"))))
+        tokens + listOf(Token(state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Error,
+                Token.TextWrapper("Commit to '${reply.commit}' was made outside it")))
 }
 
 /**
