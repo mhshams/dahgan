@@ -63,8 +63,8 @@ private fun undoEncoding(encoding: Encoding, bytes: ByteArray) = when (encoding)
     Encoding.UTF8 -> undoUTF8(bytes, 0)
     Encoding.UTF16LE -> combinePairs(undoUTF16LE(bytes, 0))
     Encoding.UTF16BE -> combinePairs(undoUTF16BE(bytes, 0))
-    Encoding.UTF32LE -> combinePairs(undoUTF32LE(bytes, 0))
-    Encoding.UTF32BE -> combinePairs(undoUTF32BE(bytes, 0))
+    Encoding.UTF32LE -> undoUTF32LE(bytes, 0)
+    Encoding.UTF32BE -> undoUTF32BE(bytes, 0)
 }
 
 /**
@@ -192,13 +192,13 @@ private fun undoUTF16BE(bytes: ByteArray, offset: Int): List<UniChar> {
         return emptyList()
     }
     if (hasFewerThan(2, bytes)) {
-        throw IllegalArgumentException("UTF-16LE input contains odd number of bytes")
+        throw IllegalArgumentException("UTF-16BE input contains odd number of bytes")
     }
     val high = bytes[0].toUnsignedInt()
     val low = bytes[1].toUnsignedInt()
     val rest = bytes.copyOfRange(2, bytes.lastIndex + 1)
 
-    return listOf(UniChar(offset + 2, (low + high * 256))) + undoUTF16LE(rest, offset + 2)
+    return listOf(UniChar(offset + 2, (low + high * 256))) + undoUTF16BE(rest, offset + 2)
 }
 
 /**
