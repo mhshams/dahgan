@@ -1,6 +1,8 @@
 package io.dahgan
 
-import java.util.*
+import io.dahgan.stream.Stream
+import io.dahgan.stream.UniChar
+import java.util.HashMap
 
 /**
  * Result tokens
@@ -309,7 +311,7 @@ data class Reply(
  */
 data class State(
         val name: String, // The input name for error messages.
-        val encoding: Encoding, // The input UTF encoding.
+        val input: Stream, // The decoded input Stream.
         val decision: String, // Current decision name.
         val limit: Int, // Lookahead characters limit.
         val forbidden: Parser?, // Pattern we must not enter into.
@@ -326,7 +328,6 @@ data class State(
         val lineChar: Int, // Character number in line.
         val code: Code, // Of token we are collecting chars for.
         val last: Int, // Last matched character.
-        val input: List<UniChar>, // The decoded input characters.
         val yields: MutableMap<String, Any> // The replies that are stored for future use.
 ) {
     override fun toString() = name
@@ -338,7 +339,7 @@ data class State(
 fun initialState(name: String, input: ByteArray): State =
         State(
                 name,
-                detectEncoding(input),
+                Stream.of(input),
                 "",
                 -1,
                 null,
@@ -355,7 +356,6 @@ fun initialState(name: String, input: ByteArray): State =
                 0,
                 Code.Unparsed,
                 ' '.toInt(),
-                decode(input),
                 HashMap()
         )
 
@@ -416,7 +416,7 @@ fun unexpectedReply(state: State): Reply =
         if (state.input.isEmpty())
             failReply(state, "Unexpected end of input")
         else
-            failReply(state, "Unexpected '${escape(state.input.first().code)}'")
+            failReply(state, "Unexpected '${escape(state.input.head().code)}'")
 
 /**
  * Fails with a message.
@@ -505,7 +505,7 @@ fun wrap(parser: Parser): Parser = parser.snd("result", finishToken()).and(eof()
  * Invokes the parser and then consumes all remaining unparsed input characters.
  */
 fun consume(parser: Parser): Parser {
-    val cleanInput = Parser { state -> returnReply(state.copy(input = emptyList()), "") }
+    val cleanInput = Parser { state -> returnReply(state.copy(input = Stream.empty()), "") }
 
     return parser.snd("result", finishToken()) and cleanInput and peekResult("result")
 }
@@ -717,7 +717,7 @@ fun prev(parser: Parser): Parser = Parser { state ->
             is Result.More -> prevParser(point, reply.result.result, reply.state)
         }
     }
-    prevParser(state, parser, state.copy(isPeek = true, input = listOf(UniChar(-1, state.last)) + state.input))
+    prevParser(state, parser, state.copy(isPeek = true, input = state.input.push(UniChar(-1, state.last))))
 }
 
 /**
@@ -813,8 +813,8 @@ fun limitedTo(parser: Parser, limit: Int): Parser = with(
  */
 fun nextIf(test: (Int) -> Boolean): Parser {
     fun consumeNextIf(state: State): Reply {
-        return if (!state.input.isEmpty() && test(state.input[0].code)) {
-            val char = state.input[0].code
+        return if (!state.input.isEmpty() && test(state.input.head().code)) {
+            val char = state.input.head().code
             val chars = if (state.isPeek) IntArray(0) else intArrayOf(char) + state.chars
 
             val byteOffset = if (state.isPeek) -1 else if (state.chars.isEmpty()) state.byteOffset else state.charsByteOffset
@@ -825,7 +825,7 @@ fun nextIf(test: (Int) -> Boolean): Parser {
             val isSol = if (char == 0xFEFF) state.isSol else false
 
             val newState = state.copy(
-                    input = state.input.subList(1, state.input.size),
+                    input = state.input.tail(),
                     last = char,
                     chars = chars,
                     charsByteOffset = byteOffset,
@@ -833,7 +833,7 @@ fun nextIf(test: (Int) -> Boolean): Parser {
                     charsLine = line,
                     charsLineChar = lineChar,
                     isSol = isSol,
-                    byteOffset = state.input[0].offset,
+                    byteOffset = state.input.head().offset,
                     charOffset = state.charOffset + 1,
                     lineChar = state.lineChar + 1)
 
@@ -931,7 +931,7 @@ fun errorTokens(tokens: Sequence<Token>, state: State, message: String, flag: Bo
 
     return if (flag && state.input.isNotEmpty())
         newTokens + sequenceOf(Token(state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Unparsed,
-                Token.ArrayWrapper(state.input.map { it.code }.toIntArray())))
+                Token.ArrayWrapper(state.input.codes())))
     else
         newTokens
 }
@@ -961,7 +961,7 @@ fun yaml() = PatternTokenizer(`l-yaml-stream`)
  * reports the encoding (which was already detected when we started parsing).
  */
 fun bom(code: Int): Parser = Parser { state ->
-    of(code).and(fake(Code.Bom, state.encoding.text.substring(1)))(state)
+    of(code).and(fake(Code.Bom, state.input.encoding().toString().substring(1)))(state)
 }
 
 /**
