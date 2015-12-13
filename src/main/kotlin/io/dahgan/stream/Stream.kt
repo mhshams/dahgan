@@ -52,10 +52,3 @@ interface Stream {
     fun codes(): IntArray
 }
 
-/**
- * Represents a unicode character and its ending offset in the input stream.
- *
- * @param offset the ending offset of character in the stream
- * @param code the character code
- */
-data class UniChar(val offset: Int, val code: Int)
