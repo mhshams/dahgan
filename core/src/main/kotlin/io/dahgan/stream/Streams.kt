@@ -16,10 +16,10 @@ class ByteStream(private val input: ByteArray, private val offset: Int = 0) : St
 
         private val decoders = mapOf(
                 Encoding.UTF8 to UTF8Decoder(),
-                Encoding.UTF16LE to UTF16LEDecoder(),
-                Encoding.UTF16BE to UTF16BEDecoder(),
-                Encoding.UTF32LE to UTF32LEDecoder(),
-                Encoding.UTF32BE to UTF32BEDecoder()
+                Encoding.UTF16LE to UTF16Decoder.le(),
+                Encoding.UTF16BE to UTF16Decoder.be(),
+                Encoding.UTF32LE to UTF32Decoder.le(),
+                Encoding.UTF32BE to UTF32Decoder.be()
         )
     }
 
