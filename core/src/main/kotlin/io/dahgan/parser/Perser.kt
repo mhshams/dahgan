@@ -1,147 +1,8 @@
-package io.dahgan
+package io.dahgan.parser
 
 import io.dahgan.stream.Stream
 import io.dahgan.stream.UniChar
-import java.util.HashMap
-
-/**
- * Result tokens
- *
- * The parsing result is a stream of tokens rather than a parse tree. The idea is to
- * convert the YAML input into byte codes. These byte codes are intended to be written
- * into a byte codes file (or more likely a UNIX pipe) for further processing.
- */
-
-/**
- * Code represents the one-character YEAST token code char.
- */
-enum class Code(val code: String) {
-    Bom             ("U"), // BOM, contains TF8, TF16LE, TF32BE, etc.
-    Text            ("T"), // Content text characters.
-    Meta            ("t"), // Non-content (meta) text characters.
-    Break           ("b"), // Separation line break.
-    LineFeed        ("L"), // Line break normalized to content line feed.
-    LineFold        ("l"), // Line break folded to content space.
-    Indicator       ("I"), // Character indicating structure.
-    White           ("w"), // Separation white space.
-    Indent          ("i"), // Indentation spaces.
-    DirectivesEnd   ("K"), // Document start marker.
-    DocumentEnd     ("k"), // Document end marker.
-    BeginEscape     ("E"), // Begins escape sequence.
-    EndEscape       ("e"), // Ends escape sequence.
-    BeginComment    ("C"), // Begins comment.
-    EndComment      ("c"), // Ends comment.
-    BeginDirective  ("D"), // Begins directive.
-    EndDirective    ("d"), // Ends directive
-    BeginTag        ("G"), // Begins tag
-    EndTag          ("g"), // Ends tag
-    BeginHandle     ("H"), // Begins tag handle
-    EndHandle       ("h"), // Ends tag handle
-    BeginAnchor     ("A"), // Begins anchor
-    EndAnchor       ("a"), // Ends anchor
-    BeginProperties ("P"), // Begins node properties
-    EndProperties   ("p"), // Ends node properties
-    BeginAlias      ("R"), // Begins alias
-    EndAlias        ("r"), // Ends alias
-    BeginScalar     ("S"), // Begins scalar content
-    EndScalar       ("s"), // Ends scalar content
-    BeginSequence   ("Q"), // Begins sequence content
-    EndSequence     ("q"), // Ends sequence content
-    BeginMapping    ("M"), // Begins mapping content
-    EndMapping      ("m"), // Ends mapping content
-    BeginPair       ("X"), // Begins mapping key:value pair
-    EndPair         ("x"), // Ends mapping key:value pair
-    BeginNode       ("N"), // Begins complete node
-    EndNode         ("n"), // Ends complete node
-    BeginDocument   ("O"), // Begins document
-    EndDocument     ("o"), // Ends document
-    BeginStream     (""), // Begins YAML stream
-    EndStream       (""), // Ends YAML stream
-    Error           ("!"), // Parsing error at this point
-    Unparsed        ("-"), // Unparsed due to errors (or at end of test)
-    Detected        ("$"); // Detected parameter (for testing)
-
-    override fun toString() = code
-}
-
-/**
- * Escapes the given character (code) if needed.
- */
-fun escape(code: Int): String = when {
-    ' '.toInt() <= code && code != '\\'.toInt() && code <= '~'.toInt() -> "${code.toChar()}"
-    code <= 0xFF -> "\\x${toHex(2, code)}"
-    0xFF < code && code <= 0xFFFF -> "\\u${toHex(4, code)}"
-    else -> "\\U${toHex(8, code)}"
-}
-
-/**
- * Escapes all the non-ASCII characters in the given text, as well as escaping
- * the \\ character, using the \\xXX, \\uXXXX and \\UXXXXXXXX escape sequences.
- */
-fun escape(text: IntArray): String = text.map { escape(it) }.joinToString()
-
-/**
- * Converts the int to the specified number of hexadecimal digits.
- */
-fun toHex(digits: Int, n: Int): String =
-        if (digits == 1) "${intToDigit(n)}" else "${toHex(digits - 1, n / 16)}${intToDigit(n % 16)}"
-
-fun intToDigit(n: Int): Char = if (n < 10) (48 + n).toChar() else (87 + n).toChar()
-
-/**
- * Parsed token.
- */
-data class Token(
-        val byteOffset: Int, // 0-base byte offset in stream.
-        val charOffset: Int, // 0-base character offset in stream.
-        val line: Int, // 1-based line number.
-        val lineChar: Int, // 0-based character in line.
-        val code: Code, // Specific token 'Code'.
-        val text: Token.Wrapper // Contained input chars, if any.
-) {
-
-    /**
-     * Converts a 'Token' to two YEAST lines: a comment with the position numbers and the actual token line.
-     */
-    override fun toString() = "# B: $byteOffset, C: $charOffset, L: $line, c: $lineChar\n$code$text\n"
-
-    interface Wrapper
-
-    class ArrayWrapper(val text: IntArray) : Wrapper {
-
-        override fun toString(): String = escape(text)
-
-        /**
-         * Escapes all the non-ASCII characters in the given text, as well as escaping
-         * the \\ character, using the \\xXX, \\uXXXX and \\UXXXXXXXX escape sequences.
-         */
-        private fun escape(text: IntArray): String = text.map {
-            when {
-                ' '.toInt() <= it && it != '\\'.toInt() && it <= '~'.toInt() -> "${it.toChar()}"
-                it <= 0xFF -> "\\x${toHex(2, it)}"
-                0xFF < it && it <= 0xFFFF -> "\\u${toHex(4, it)}"
-                else -> "\\U${toHex(8, it)}"
-            }
-        }.joinToString("")
-
-        /**
-         * Converts the int to the specified number of hexadecimal digits.
-         */
-        private fun toHex(digits: Int, n: Int): String =
-                if (digits == 1) "${intToDigit(n)}" else "${toHex(digits - 1, n / 16)}${intToDigit(n % 16)}"
-
-        private fun intToDigit(n: Int): Char = if (n < 10) (48 + n).toChar() else (87 + n).toChar()
-    }
-
-    class TextWrapper(val text: String) : Wrapper {
-        override fun toString(): String = text
-    }
-}
-
-/**
- * Converts a list of tokens to a multi-line YEAST text.
- */
-fun showTokens(tokens: Sequence<Token>): String = tokens.fold("") { text, token -> text.concat(token.toString()) }
+import java.util.*
 
 /**
  * A 'Parser' is basically a function computing a 'Reply'.
@@ -268,96 +129,9 @@ class Parser(val f: (State) -> Reply) {
 }
 
 /**
- * The 'Result' of each invocation is either an error, the actual result, or
- * a continuation for computing the actual result.
+ * Converts a list of tokens to a multi-line YEAST text.
  */
-sealed class Result {
-    /**
-     * Parsing aborted with a failure.
-     */
-    class Failed(val message: Any) : Result() {
-        override fun toString() = "Failed $message"
-    }
-
-    /**
-     * Parsing completed with a result.
-     */
-    class Completed(val result: Any) : Result() {
-        override fun toString() = "Result $result"
-    }
-
-    /**
-     * Parsing is ongoing with a continuation.
-     */
-    class More(val result: Parser) : Result() {
-        override fun toString() = "More"
-    }
-}
-
-/**
- * Each invocation of a 'Parser' yields a 'Reply'. The 'Result' is only one part of the 'Reply'.
- */
-data class Reply(
-        val result: Result, // Parsing result.
-        val tokens: Sequence<Token>, // Tokens generated by the parser.
-        val commit: String?, // Commitment to a decision point.
-        val state: State             // The updated parser state.
-) {
-    override fun toString() = "Result: $result , Tokens: ${showTokens(tokens)}, Commit: $commit, State: { $state}"
-}
-
-/**
- * Parsing state
- */
-data class State(
-        val name: String, // The input name for error messages.
-        val input: Stream, // The decoded input Stream.
-        val decision: String, // Current decision name.
-        val limit: Int, // Lookahead characters limit.
-        val forbidden: Parser?, // Pattern we must not enter into.
-        val isPeek: Boolean, // Disables token generation.
-        val isSol: Boolean, // Is at start of line?
-        val chars: IntArray, // (Reversed) characters collected for a token.
-        val charsByteOffset: Int, // Byte offset of first collected character.
-        val charsCharOffset: Int, // Char offset of first collected character.
-        val charsLine: Int, // Line of first collected character.
-        val charsLineChar: Int, // Character in line of first collected character.
-        val byteOffset: Int, // Offset in bytes in the input.
-        val charOffset: Int, // Offset in characters in the input.
-        val line: Int, // Builds on YAML's line break definition.
-        val lineChar: Int, // Character number in line.
-        val code: Code, // Of token we are collecting chars for.
-        val last: Int, // Last matched character.
-        val yields: MutableMap<String, Any> // The replies that are stored for future use.
-) {
-    override fun toString() = name
-}
-
-/**
- * Returns an initial 'State' for parsing the input (with name for error messages).
- */
-fun initialState(name: String, input: ByteArray): State =
-        State(
-                name,
-                Stream.of(input),
-                "",
-                -1,
-                null,
-                false,
-                true,
-                intArrayOf(),
-                -1,
-                -1,
-                -1,
-                -1,
-                0,
-                0,
-                1,
-                0,
-                Code.Unparsed,
-                ' '.toInt(),
-                HashMap()
-        )
+fun showTokens(tokens: Sequence<Token>): String = tokens.fold("") { text, token -> text.concat(token.toString()) }
 
 /**
  * Converts 'Char' to a parser for a character (that returns nothing).
@@ -490,7 +264,7 @@ fun finishToken(): Parser = Parser { state ->
                 state.charsLine,
                 state.charsLineChar,
                 state.code,
-                Token.ArrayWrapper(state.chars.reversed().toIntArray())))
+                TextWrapper.of(state.chars.reversed().toIntArray())))
     }
 }
 
@@ -534,7 +308,7 @@ fun fake(code: Code, text: String): Parser = Parser { state ->
                 if (state.charsLine == -1) state.line else state.charsLine,
                 if (state.charsLineChar == -1) state.lineChar else state.charsLineChar,
                 code,
-                Token.TextWrapper(text)
+                TextWrapper.of(text)
         ))
     }
 }
@@ -574,7 +348,7 @@ fun text(parser: Parser): Parser = token(Code.Text, parser)
  */
 fun emptyToken(code: Code): Parser = finishToken().and(Parser { state ->
     if (state.isPeek) returnReply(state, "")
-    else tokenReply(state, Token(state.byteOffset, state.charOffset, state.line, state.lineChar, code, Token.TextWrapper("")))
+    else tokenReply(state, Token(state.byteOffset, state.charOffset, state.line, state.lineChar, code, TextWrapper.of("")))
 })
 
 /**
@@ -592,53 +366,6 @@ fun prefixErrorWith(parser: Parser, prefix: Parser): Parser = Parser { state ->
         is Result.Completed -> reply
         is Result.More -> reply.copy(result = Result.More(prefixErrorWith(reply.result.result, prefix)))
         is Result.Failed -> reply.copy(result = Result.More(prefix.and(fail(reply.result.message))))
-    }
-}
-
-/**
- * Production context.
- */
-enum class Context(val text: String) {
-    BlockOut("block-out"), // Outside block sequence.
-    BlockIn("block-in"), // Inside block sequence.
-    FlowOut("flow-out"), // Outside flow collection.
-    FlowIn("flow-in"), // Inside flow collection.
-    BlockKey("block-key"), // Implicit block key.
-    FlowKey("flow-key");       // Implicit flow key.
-
-
-    override fun toString(): String = text
-
-    companion object {
-        fun from(word: String): Context = when (word) {
-            "block_out" -> BlockOut
-            "block_in" -> BlockIn
-            "flow_out" -> FlowOut
-            "flow_in" -> FlowIn
-            "block_key" -> BlockKey
-            "flow_key" -> FlowKey
-            else -> throw IllegalArgumentException("unknown context: $word")
-        }
-    }
-}
-
-/**
- * Chomp method.
- */
-enum class Chomp(val text: String) {
-    Strip("strip"), // Remove all trailing line breaks.
-    Clip("clip"), // Keep first trailing line break.
-    Keep("keep");       // Keep all trailing line breaks.
-
-    override fun toString(): String = text
-
-    companion object {
-        fun from(word: String): Chomp = when (word) {
-            "strip" -> Strip
-            "clip" -> Clip
-            "keep" -> Keep
-            else -> throw IllegalArgumentException("unknown chomp: $word")
-        }
     }
 }
 
@@ -863,75 +590,16 @@ fun nextIf(test: (Int) -> Boolean): Parser {
 }
 
 /**
- * 'Tokenizer' converts a (named) input text into a list of 'Token'. Errors
- * are reported as tokens with the Error 'Code', and the unparsed text
- * following an error may be attached as a final token (if the withFollowing is true).
- */
-abstract class Tokenizer {
-    abstract fun tokenize(name: String, input: ByteArray, withFollowing: Boolean): Sequence<Token>
-}
-
-/**
- * Converts the pattern to a simple 'Tokenizer'.
- */
-class PatternTokenizer(val pattern: Parser) : Tokenizer() {
-
-    override fun tokenize(name: String, input: ByteArray, withFollowing: Boolean): Sequence<Token> {
-
-        fun patternParser(parser: Parser, state: State): Sequence<Token> {
-            val reply = parser(state)
-            val tokens = commitBugs(reply)
-            val rState = reply.state
-
-            return when (reply.result) {
-                is Result.Failed -> errorTokens(tokens, rState, reply.result.message as String, withFollowing)
-                is Result.Completed -> tokens
-                is Result.More -> tokens + patternParser(reply.result.result, rState)
-            }
-        }
-
-        return patternParser(wrap(pattern), initialState(name, input))
-    }
-}
-
-/**
- * Converts the parser returning parser to a
- * simple 'Tokenizer' (only used for tests). The result is reported as a token
- * with the Detected 'Code' The result is reported as a token with the Detected 'Code'.
- */
-class ParserTokenizer(val what: String, val parser: Parser) : Tokenizer() {
-
-    override fun tokenize(name: String, input: ByteArray, withFollowing: Boolean): Sequence<Token> {
-
-        fun parserParser(parser: Parser, state: State): Sequence<Token> {
-            val reply = parser(state)
-            val tokens = commitBugs(reply)
-            val rState = reply.state
-
-            return when (reply.result) {
-                is Result.Failed -> errorTokens(tokens, rState, reply.result.message as String, withFollowing)
-                is Result.Completed -> tokens + Token(rState.byteOffset, rState.charOffset, rState.line,
-                        rState.lineChar, Code.Detected, Token.TextWrapper("$what=${reply.result.result}"))
-                is Result.More -> tokens + parserParser(reply.result.result, rState)
-            }
-        }
-
-        return parserParser(wrap(parser), initialState(name, input))
-    }
-}
-
-
-/**
  * Appends an Error token with the specified message at the end of tokens, and if withFollowing
  * also appends the unparsed text following the error as a final Unparsed token.
  */
 fun errorTokens(tokens: Sequence<Token>, state: State, message: String, flag: Boolean): Sequence<Token> {
     val newTokens = tokens + sequenceOf(Token(state.byteOffset, state.charOffset, state.line, state.lineChar,
-            Code.Error, Token.TextWrapper(message)))
+            Code.Error, TextWrapper.of(message)))
 
     return if (flag && state.input.isNotEmpty())
         newTokens + sequenceOf(Token(state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Unparsed,
-                Token.ArrayWrapper(state.input.codes())))
+                TextWrapper.of(state.input.codes())))
     else
         newTokens
 }
@@ -947,13 +615,8 @@ fun commitBugs(reply: Reply): Sequence<Token> {
         tokens
     else
         tokens + listOf(Token(state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Error,
-                Token.TextWrapper("Commit to '${reply.commit}' was made outside it")))
+                TextWrapper.of("Commit to '${reply.commit}' was made outside it")))
 }
-
-/**
- * Converts the Unicode input (called name in error messages) to a list of 'Token' according to the YAML spec. This is it!
- */
-fun yaml() = PatternTokenizer(`l-yaml-stream`)
 
 /**
  * Doesn't actually detect the encoding, we just call it
