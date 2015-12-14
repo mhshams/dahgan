@@ -1,5 +1,7 @@
 package io.dahgan
 
+import io.dahgan.parser.*
+
 val tokenizers = mapOf(
         "c-chomping-indicator"          to ParserTokenizer("t", `c-chomping-indicator`()),
         "detect-inline-indentation"     to ParserTokenizer("m", consume(`detect-inline-indentation`)),
