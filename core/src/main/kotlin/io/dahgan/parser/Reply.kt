@@ -24,5 +24,5 @@ data class Reply(
          */
         val state: State
 ) {
-    override fun toString() = "Result: $result , Tokens: ${showTokens(tokens)}, Commit: $commit, State: { $state}"
+    override fun toString() = "Result: $result , Tokens: ${showTokens(tokens)}, Commit: $commit, State: {$state}"
 }

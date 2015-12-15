@@ -40,7 +40,7 @@ data class Token(
         /**
          * Contained input chars, if any.
          */
-        val text: TextWrapper
+        val text: Escapable
 ) {
 
 
@@ -50,18 +50,21 @@ data class Token(
     override fun toString() = "# B: $byteOffset, C: $charOffset, L: $line, c: $lineChar\n$code$text\n"
 }
 
-sealed class TextWrapper {
+/**
+ * A container to keep the input, as normal text or array of codes, and lazily escape them if needed.
+ */
+sealed class Escapable {
     companion object {
-        fun of(text: IntArray): TextWrapper = Code(text)
+        fun of(text: IntArray): Escapable = Code(text)
 
-        fun of(text: String): TextWrapper = Text(text)
+        fun of(text: String): Escapable = Text(text)
     }
 
-    class Code(val codes: IntArray) : TextWrapper() {
+    class Code(val codes: IntArray) : Escapable() {
         override fun toString(): String = escape(codes, "")
     }
 
-    class Text(val text: String) : TextWrapper() {
+    class Text(val text: String) : Escapable() {
         override fun toString(): String = text
     }
 }
@@ -90,3 +93,8 @@ fun toHex(digits: Int, n: Int): String =
         if (digits == 1) "${intToDigit(n)}" else "${toHex(digits - 1, n / 16)}${intToDigit(n % 16)}"
 
 fun intToDigit(n: Int): Char = if (n < 10) (48 + n).toChar() else (87 + n).toChar()
+
+/**
+ * Converts a list of tokens to a multi-line YEAST text.
+ */
+fun showTokens(tokens: Sequence<Token>): String = tokens.fold("") { text, token -> text.concat(token.toString()) }

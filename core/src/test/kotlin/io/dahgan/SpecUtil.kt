@@ -1,6 +1,16 @@
 package io.dahgan
 
 import io.dahgan.parser.*
+import io.dahgan.stream.Stream
+
+/**
+ * Invokes the parser and then consumes all remaining unparsed input characters.
+ */
+private fun consume(parser: Parser): Parser {
+    val cleanInput = Parser { state -> returnReply(state.copy(input = Stream.empty()), "") }
+
+    return parser.snd("result", finishToken()) and cleanInput and peekResult("result")
+}
 
 val tokenizers = mapOf(
         "c-chomping-indicator"          to ParserTokenizer("t", `c-chomping-indicator`()),
