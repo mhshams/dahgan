@@ -1,5 +1,6 @@
 package io.dahgan.parser
 
+import io.dahgan.parser.Result.*
 import io.dahgan.stream.Stream
 import io.dahgan.stream.UniChar
 import java.util.*
@@ -41,9 +42,9 @@ class Parser(val f: (State) -> Reply) {
         fun bindParser(left: Parser, right: Parser): Parser = Parser { state ->
             val reply = left(state)
             when (reply.result) {
-                is Result.Failed -> reply.copy(result = Result.Failed(reply.result.message))
-                is Result.Completed -> reply.copy(result = Result.More(right))
-                is Result.More -> reply.copy(result = Result.More(bindParser(reply.result.result, right)))
+                is Failed -> reply.copy(result = Failed(reply.result.message))
+                is Completed -> reply.copy(result = More(right))
+                is More -> reply.copy(result = More(bindParser(reply.result.result, right)))
             }
         }
 
@@ -70,10 +71,10 @@ class Parser(val f: (State) -> Reply) {
             val reply = left(state)
 
             when (reply.result) {
-                is Result.Failed -> reply.copy(result = Result.Failed(reply.result.message))
-                is Result.Completed -> reply.copy(result = Result.More(right),
+                is Failed -> reply.copy(result = Failed(reply.result.message))
+                is Completed -> reply.copy(result = More(right),
                         state = reply.state.copy(yields = clone(state.yields, reply.result.result)))
-                is Result.More -> reply.copy(result = Result.More(bindParser(reply.result.result, right)))
+                is More -> reply.copy(result = More(bindParser(reply.result.result, right)))
             }
         }
 
@@ -83,9 +84,9 @@ class Parser(val f: (State) -> Reply) {
     /**
      * Matches parser, except if rejected matches at this point.
      */
-    infix fun not(rejected: Parser): Parser = reject(rejected, null).and(this)
+    infix fun not(rejected: Parser): Parser = reject(rejected, null) and this
 
-    infix fun not(rejected: Char): Parser = reject(of(rejected), null).and(this)
+    infix fun not(rejected: Char): Parser = reject(of(rejected), null) and this
 
     /**
      * Commits to decision (in an option) after successfully matching the parser.
@@ -120,18 +121,12 @@ class Parser(val f: (State) -> Reply) {
         if (state.isPeek)
             reply
         else when (reply.result) {
-            is Result.Completed -> reply
-            is Result.More -> reply.copy(result = Result.More(reply.result.result recovery recover))
-            is Result.Failed -> reply.copy(result = Result.More(
-                    fake(Code.Error, reply.result.message.toString()) and unparsed and recover))
+            is Completed -> reply
+            is More -> reply.copy(result = More(reply.result.result recovery recover))
+            is Failed -> reply.copy(result = More(fake(Code.Error, reply.result.message) and unparsed and recover))
         }
     }
 }
-
-/**
- * Converts a list of tokens to a multi-line YEAST text.
- */
-fun showTokens(tokens: Sequence<Token>): String = tokens.fold("") { text, token -> text.concat(token.toString()) }
 
 /**
  * Converts 'Char' to a parser for a character (that returns nothing).
@@ -176,12 +171,12 @@ infix fun Char.and(other: Parser): Parser = of(this) and other
 /**
  *  Prepares a 'Reply' with the specified state and result.
  */
-fun returnReply(state: State, result: Any): Reply = Reply(Result.Completed(result), emptySequence(), null, state)
+fun returnReply(state: State, result: Any): Reply = Reply(Completed(result), emptySequence(), null, state)
 
 /**
  * Prepares a 'Reply' with the specified state and error message.
  */
-fun failReply(state: State, message: Any): Reply = Reply(Result.Failed(message), emptySequence(), null, state)
+fun failReply(state: State, message: Any): Reply = Reply(Failed(message), emptySequence(), null, state)
 
 /**
  * Returns a failReply for an unexpected character.
@@ -205,9 +200,9 @@ fun nonEmpty(parser: Parser): Parser = Parser { state ->
         val reply = parser(state)
         val newSate = reply.state
         when (reply.result) {
-            is Result.Failed -> reply
-            is Result.Completed -> if (newSate.charOffset > offset) reply else failReply(newSate, "Matched empty pattern")
-            is Result.More -> reply.copy(result = Result.More(nonEmptyParser(offset, reply.result.result)))
+            is Failed -> reply
+            is Completed -> if (newSate.charOffset > offset) reply else failReply(newSate, "Matched empty pattern")
+            is More -> reply.copy(result = More(nonEmptyParser(offset, reply.result.result)))
         }
     }
 
@@ -239,9 +234,8 @@ fun sol(): Parser = Parser { state ->
  * Any collected characters are cleared (either there are none, or we
  * put them in this token, or we don't want them).
  */
-fun tokenReply(state: State, token: Token): Reply = Reply(Result.Completed(""), sequenceOf(token), null,
-        state.copy(chars = IntArray(0), charsByteOffset = -1, charsCharOffset = -1, charsLine = -1, charsLineChar = -1))
-
+fun tokenReply(state: State, token: Token): Reply = Reply(Completed(""), sequenceOf(token), null, state.
+        copy(chars = intArrayOf(), charsByteOffset = -1, charsCharOffset = -1, charsLine = -1, charsLineChar = -1))
 
 /**
  * Places all collected text into a new token and begins a new
@@ -264,24 +258,8 @@ fun finishToken(): Parser = Parser { state ->
                 state.charsLine,
                 state.charsLineChar,
                 state.code,
-                TextWrapper.of(state.chars.reversed().toIntArray())))
+                Escapable.of(state.chars.reversed().toIntArray())))
     }
-}
-
-/**
- * Invokes the parser, ensures any unclaimed input characters
- * are wrapped into a token (only happens when testing productions), ensures no
- * input is left unparsed, and returns the parser's result.
- */
-fun wrap(parser: Parser): Parser = parser.snd("result", finishToken()).and(eof()).and(peekResult("result"))
-
-/**
- * Invokes the parser and then consumes all remaining unparsed input characters.
- */
-fun consume(parser: Parser): Parser {
-    val cleanInput = Parser { state -> returnReply(state.copy(input = Stream.empty()), "") }
-
-    return parser.snd("result", finishToken()) and cleanInput and peekResult("result")
 }
 
 /**
@@ -298,7 +276,7 @@ fun token(code: Code, parser: Parser): Parser = finishToken() and with(
  * Creates a token with the specified code and "fake"
  * text characters, instead of whatever characters are collected so far.
  */
-fun fake(code: Code, text: String): Parser = Parser { state ->
+fun fake(code: Code, text: Any): Parser = Parser { state ->
     if (state.isPeek) {
         returnReply(state, "")
     } else {
@@ -308,7 +286,7 @@ fun fake(code: Code, text: String): Parser = Parser { state ->
                 if (state.charsLine == -1) state.line else state.charsLine,
                 if (state.charsLineChar == -1) state.lineChar else state.charsLineChar,
                 code,
-                TextWrapper.of(text)
+                Escapable.of(text.toString())
         ))
     }
 }
@@ -346,16 +324,18 @@ fun text(parser: Parser): Parser = token(Code.Text, parser)
 /**
  * Returns an empty token.
  */
-fun emptyToken(code: Code): Parser = finishToken().and(Parser { state ->
-    if (state.isPeek) returnReply(state, "")
-    else tokenReply(state, Token(state.byteOffset, state.charOffset, state.line, state.lineChar, code, TextWrapper.of("")))
-})
+fun emptyToken(code: Code): Parser = finishToken() and Parser { state ->
+    if (state.isPeek)
+        returnReply(state, "")
+    else
+        tokenReply(state, Token(state.byteOffset, state.charOffset, state.line, state.lineChar, code, Escapable.of("")))
+}
 
 /**
  * Wraps the specified parser with matching beginCode and endCode tokens.
  */
-fun wrapTokens(beginCode: Code, endCode: Code, parser: Parser): Parser = emptyToken(beginCode) and
-        prefixErrorWith(parser, emptyToken(endCode)) and emptyToken(endCode)
+fun wrapTokens(beginCode: Code, endCode: Code, parser: Parser): Parser =
+        emptyToken(beginCode) and  prefixErrorWith(parser, emptyToken(endCode)) and emptyToken(endCode)
 
 /**
  * Invokes the prefix parser if an error is detected during the pattern parser, and then return the error.
@@ -363,29 +343,29 @@ fun wrapTokens(beginCode: Code, endCode: Code, parser: Parser): Parser = emptyTo
 fun prefixErrorWith(parser: Parser, prefix: Parser): Parser = Parser { state ->
     val reply = parser(state)
     when (reply.result) {
-        is Result.Completed -> reply
-        is Result.More -> reply.copy(result = Result.More(prefixErrorWith(reply.result.result, prefix)))
-        is Result.Failed -> reply.copy(result = Result.More(prefix.and(fail(reply.result.message))))
+        is Completed -> reply
+        is More -> reply.copy(result = More(prefixErrorWith(reply.result.result, prefix)))
+        is Failed -> reply.copy(result = More(prefix and fail(reply.result.message)))
     }
 }
 
 /**
  * Tries to match parser, otherwise does nothing.
  */
-fun opt(parser: Parser): Parser = (parser.and(empty())) or (empty())
+fun opt(parser: Parser): Parser = parser and empty() or empty()
 
 /**
  * Matches zero or more occurrences of repeat, as long as each one actually consumes input characters.
  */
 fun zom(parser: Parser): Parser {
-    fun zomParser(): Parser = ((parser cmt "*").and(Parser { state -> zomParser()(state) })) or (empty())
+    fun zomParser(): Parser = (parser cmt "*") and Parser { state -> zomParser()(state) } or empty()
     return "*" cho zomParser()
 }
 
 /**
  * Matches one or more occurrences of parser, as long as each one actually consumed input characters.
  */
-fun oom(parser: Parser): Parser = parser.and(zom(parser))
+fun oom(parser: Parser): Parser = parser and zom(parser)
 
 /**
  * Tries to parse first, and failing that parses
@@ -396,11 +376,11 @@ fun decide(left: Parser, right: Parser): Parser = Parser { state ->
         val reply = left(state)
         val newTokens = tokens + reply.tokens
         when (reply.result) {
-            is Result.Failed -> Reply(Result.More(right), emptySequence(), null, point)
-            is Result.Completed -> reply.copy(tokens = newTokens)
-            is Result.More ->
+            is Failed -> Reply(More(right), emptySequence(), null, point)
+            is Completed -> reply.copy(tokens = newTokens)
+            is More ->
                 if (reply.commit != null)
-                    reply.copy(tokens = newTokens, result = Result.More(reply.result.result))
+                    reply.copy(tokens = newTokens, result = More(reply.result.result))
                 else
                     decideParser(point, newTokens, reply.result.result, right)(reply.state)
         }
@@ -423,8 +403,8 @@ fun choice(decision: String, parser: Parser): Parser = Parser { state ->
         }
 
         when (reply.result) {
-            is Result.More -> reply.copy(commit = commit,
-                    result = Result.More(choiceParser(parentDecision, makingDecision, reply.result.result)))
+            is More -> reply.copy(commit = commit,
+                    result = More(choiceParser(parentDecision, makingDecision, reply.result.result)))
             else -> reply.copy(commit = commit, state = reply.state.copy(decision = parentDecision))
         }
     }
@@ -439,9 +419,9 @@ fun prev(parser: Parser): Parser = Parser { state ->
     fun prevParser(point: State, parser: Parser, state: State): Reply {
         val reply = parser(state)
         return when (reply.result) {
-            is Result.Failed -> failReply(point, reply.result.message)
-            is Result.Completed -> returnReply(point, reply.result.result)
-            is Result.More -> prevParser(point, reply.result.result, reply.state)
+            is Failed -> failReply(point, reply.result.message)
+            is Completed -> returnReply(point, reply.result.result)
+            is More -> prevParser(point, reply.result.result, reply.state)
         }
     }
     prevParser(state, parser, state.copy(isPeek = true, input = state.input.push(UniChar(-1, state.last))))
@@ -454,9 +434,9 @@ fun peek(parser: Parser): Parser = Parser { state ->
     fun peekParser(point: State, parser: Parser, state: State): Reply {
         val reply = parser(state)
         return when (reply.result) {
-            is Result.Failed -> failReply(point, reply.result.message)
-            is Result.Completed -> returnReply(point, reply.result.result)
-            is Result.More -> peekParser(point, reply.result.result, reply.state)
+            is Failed -> failReply(point, reply.result.message)
+            is Completed -> returnReply(point, reply.result.result)
+            is More -> peekParser(point, reply.result.result, reply.state)
         }
     }
     peekParser(state, parser, state.copy(isPeek = true))
@@ -470,9 +450,9 @@ fun reject(parser: Parser, name: String?): Parser {
     fun rejectParser(point: State, name: String?, parser: Parser, state: State): Reply {
         val reply = parser(state)
         return when (reply.result) {
-            is Result.Failed -> returnReply(point, "")
-            is Result.Completed -> if (name == null) unexpectedReply(point) else failReply(point, "Unexpected $name")
-            is Result.More -> rejectParser(point, name, reply.result.result, reply.state)
+            is Failed -> returnReply(point, "")
+            is Completed -> if (name == null) unexpectedReply(point) else failReply(point, "Unexpected $name")
+            is More -> rejectParser(point, name, reply.result.result, reply.state)
         }
     }
 
@@ -482,15 +462,13 @@ fun reject(parser: Parser, name: String?): Parser {
 /**
  * Consumes all the character up to and not including the next point where the specified parser is a match.
  */
-fun upto(parser: Parser): Parser = zom(nla(parser).and(nextIf({ true })))
+fun upto(parser: Parser): Parser = zom(nla(parser) and nextIf({ true }))
 
 /**
  *  Commits the parser to all the decisions up to the most recent parent decision.
  *  This makes all tokens generated in this parsing path immediately available to the caller.
  */
-fun commit(decision: String): Parser = Parser { state ->
-    Reply(Result.Completed(""), emptySequence(), decision, state)
-}
+fun commit(decision: String): Parser = Parser { state -> Reply(Completed(""), emptySequence(), decision, state) }
 
 /**
  * Increments line counter and resets lineChar.
@@ -508,7 +486,7 @@ fun <T> with(set: (State, T?) -> State, get: (State) -> T, value: T?, parser: Pa
     fun withParser(parentValue: T, parser: Parser): Parser = Parser { state ->
         val reply = parser(state)
         when (reply.result) {
-            is Result.More -> reply.copy(result = Result.More(withParser(parentValue, reply.result.result)))
+            is More -> reply.copy(result = More(withParser(parentValue, reply.result.result)))
             else -> reply.copy(state = set(reply.state, parentValue))
         }
     }
@@ -521,7 +499,7 @@ fun <T> with(set: (State, T?) -> State, get: (State) -> T, value: T?, parser: Pa
 fun forbidding(parser: Parser, forbidden: Parser): Parser = with(
         { state: State, forbidden: Parser? -> state.copy(forbidden = forbidden) },
         { state -> state.forbidden },
-        forbidden.and(empty()),
+        forbidden and empty(),
         parser)
 
 /**
@@ -581,41 +559,12 @@ fun nextIf(test: (Int) -> Boolean): Parser {
             val newParser = reject(state.forbidden, "forbidden pattern")
             val reply = newParser(state.copy(forbidden = null))
             when (reply.result) {
-                is Result.Failed -> reply
-                is Result.Completed -> limitedNextIf(state)
+                is Failed -> reply
+                is Completed -> limitedNextIf(state)
                 else -> throw IllegalStateException("ME: unexpected")
             }
         }
     }
-}
-
-/**
- * Appends an Error token with the specified message at the end of tokens, and if withFollowing
- * also appends the unparsed text following the error as a final Unparsed token.
- */
-fun errorTokens(tokens: Sequence<Token>, state: State, message: String, flag: Boolean): Sequence<Token> {
-    val newTokens = tokens + sequenceOf(Token(state.byteOffset, state.charOffset, state.line, state.lineChar,
-            Code.Error, TextWrapper.of(message)))
-
-    return if (flag && state.input.isNotEmpty())
-        newTokens + sequenceOf(Token(state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Unparsed,
-                TextWrapper.of(state.input.codes())))
-    else
-        newTokens
-}
-
-/**
- * Inserts an error token if a commit was made outside a named choice. This should never happen outside tests.
- */
-fun commitBugs(reply: Reply): Sequence<Token> {
-    val tokens = reply.tokens
-    val state = reply.state
-
-    return if (reply.commit == null)
-        tokens
-    else
-        tokens + listOf(Token(state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Error,
-                TextWrapper.of("Commit to '${reply.commit}' was made outside it")))
 }
 
 /**
@@ -624,7 +573,7 @@ fun commitBugs(reply: Reply): Sequence<Token> {
  * reports the encoding (which was already detected when we started parsing).
  */
 fun bom(code: Int): Parser = Parser { state ->
-    of(code).and(fake(Code.Bom, state.input.encoding().toString().substring(1)))(state)
+    (of(code) and fake(Code.Bom, state.input.encoding().toString().substring(1)))(state)
 }
 
 /**
