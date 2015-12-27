@@ -1,7 +1,6 @@
 package io.dahgan.parser
 
 import io.dahgan.parser.Result.*
-import io.dahgan.stream.Stream
 import io.dahgan.stream.UniChar
 import java.util.*
 
