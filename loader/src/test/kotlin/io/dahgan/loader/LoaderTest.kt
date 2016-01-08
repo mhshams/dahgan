@@ -6,10 +6,16 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
+ * Verifies Loader
  */
 class LoaderTest {
     companion object {
         val BASE_PATH = File(LoaderTest::class.java.getResource("/io/dahgan/loader").file)
+    }
+
+    @Test
+    fun loadEmpty() {
+        assertEquals("", load("---\n# a comment \n..."))
     }
 
     @Test
@@ -87,6 +93,55 @@ class LoaderTest {
 
         assertMapping(1, sequence[1])
         assertSequence(listOf("baz", "bux"), (sequence[1] as Map<*, *>)["b"])
+    }
+
+    @Test
+    fun loadMultiLineText() {
+        val text = """
+            comments: |
+                Late afternoon is best.
+                Backup contact is Nancy
+                Billsmer @ 338-4338.
+        """
+
+        assertPair("comments", "Late afternoon is best.\nBackup contact is Nancy\nBillsmer @ 338-4338.\n", load(text))
+    }
+
+    @Test
+    fun loadFoldedText() {
+        val text = """
+            comments: >
+                Late afternoon is best.
+                Backup contact is Nancy
+                Billsmer @ 338-4338.
+        """
+
+        assertPair("comments", "Late afternoon is best. Backup contact is Nancy Billsmer @ 338-4338.\n", load(text))
+    }
+
+    @Test
+    fun loadImplicitFoldedText() {
+        val text = """
+            comments:
+                Late afternoon is best.
+                Backup contact is Nancy
+                Billsmer @ 338-4338.
+        """
+
+        assertPair("comments", "Late afternoon is best. Backup contact is Nancy Billsmer @ 338-4338.", load(text))
+    }
+
+    @Test
+    fun loadAnchorAlias() {
+        val text = """
+            sender: &123
+                name: Nancy Billsmer
+            receiver: *123
+        """
+
+        val map = assertMapping(2, load(text))
+        assertPair("name", "Nancy Billsmer", map["sender"])
+        assertPair("name", "Nancy Billsmer", map["receiver"])
     }
 
     @Test
@@ -190,7 +245,7 @@ class LoaderTest {
         assertPair("line", "23", files[0])
         assertPair("line", "58", files[1])
 
-        assertPair("code", """x = MoreObject("345\x5cn")""", files[0])
+        assertPair("code", "x = MoreObject(\"345\\x5cn\")\n", files[0])
         assertPair("code", "foo = bar", files[1])
     }
 
@@ -222,7 +277,7 @@ class LoaderTest {
             assertPair("given", "Chris", contact)
             assertPair("family", "Dumars", contact)
             val address = assertMapping(4, contact["address"])
-            assertPair("lines", "458 Walkman Dr. Suite #292", address)
+            assertPair("lines", "458 Walkman Dr.\nSuite #292\n", address)
             assertPair("city", "Royal Oak", address)
             assertPair("state", "MI", address)
             assertPair("postal", "48046", address)
@@ -241,6 +296,13 @@ class LoaderTest {
         assertPair("quantity", "1", product[1])
         assertPair("description", "Super Hoop", product[1])
         assertPair("price", "2392.00", product[1])
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun error() {
+        val text = "foo: bar \nfoo"
+
+        assertPair("foo", "bar", load(text))
     }
 
     private fun assertDocuments(size: Int, documents: List<Any>): List<*> {
