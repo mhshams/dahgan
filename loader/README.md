@@ -1,6 +1,6 @@
 # Loader Module
 The Loader module is an example to demonstrate how generated YEAST tokens from Core module can be used for further processes.
-It takes the generated tokens from Core module and generates Kotlin objects.
+It takes the generated tokens from Core module and converts them to Kotlin objects.
 
 #### Examples
 
@@ -66,4 +66,4 @@ Document #2
 baz=bux
 ```
 
-There are other variants of load function in Loader.kt to read text, file and byte array. 
+There are other variants of load and loadAll function in Loader.kt to read text, file or byte array. 

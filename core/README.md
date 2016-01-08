@@ -1,11 +1,11 @@
 ## Core Module
-The Core module consist of YAML 1.2 specification, the parser and the YEAST tokenizer. 
+The Core module consists of YAML 1.2 specification, the parser and the YEAST tokenizer. 
 It is, in fact, a [Kotlin](https://kotlinlang.org/) implementation of a Haskell based YAML parser called [YamlReference](https://hackage.haskell.org/package/YamlReference). 
 More detailed information about the original Haskell package can be found [here](https://hackage.haskell.org/package/YamlReference) and [here](http://www.ben-kiki.org/oren/YamlReference/).
 
 #### Specification
 The specification is directly copied from [YAML 1.2 specification](http://yaml.org/spec/1.2/spec.html) with minor changes to follow Kotlin language syntax.
-Following is a snippet of specification (Spec.kt):
+Following is a snippet of the specification (Spec.kt):
 ```kotlin
 /**
  * [36] ns-hex-digit ::=  ns-dec-digit
@@ -36,8 +36,7 @@ val `ns-uri-char` = "escape" cho
 
 #### Tokenizer
 The parsing result is a sequence of YEAST tokens. These tokens can later be used by other modules, or third-party tools,
-to generate useful data. For example Loader module uses these tokens to generate Kotlin objects (Map, List or String) from given
-YAML file. 
+to generate useful data. For example Loader module takes these tokens to convert them to Kotlin objects (Map, List or String).
 
 Following code is a sample way to explore the tokenizer:
 ```kotlin

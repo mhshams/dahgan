@@ -13,6 +13,6 @@ The Core module is a [Kotlin](https://kotlinlang.org/) implementation of a Haske
 
 ## Modules
 #### Core
-The Core module consist of YAML 1.2 specification, the parser and the YEAST tokenizer. [Read More](core/README.md)
+The Core module consists of YAML 1.2 specification, the parser and the YEAST tokenizer. [Read More](core/README.md)
 #### Loader
 The Loader module takes the generated tokens from Core module and generates Kotlin objects. [Read More](loader/README.md)
