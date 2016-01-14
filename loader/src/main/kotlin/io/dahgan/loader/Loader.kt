@@ -22,7 +22,7 @@ public fun load(file: File): Any = load(file.readBytes())
  * Loads the first yaml document in the given byte array and returns the loaded object.
  * Depending on the content, the result can be a simple text, a map or a list.
  */
-public fun load(bytes: ByteArray): Any = load(yaml().tokenize("load", bytes, false)).instance
+public fun load(bytes: ByteArray): Any = load(yaml().tokenize("load", bytes, false))[0]
 
 /**
  * Loads all yaml documents in the given text and returns the loaded objects.
@@ -40,155 +40,160 @@ public fun loadAll(file: File): List<Any> = loadAll(file.readBytes())
  * Loads all yaml documents in the given byte array and returns the loaded objects.
  * The result is a list of loaded objects.
  */
-public fun loadAll(bytes: ByteArray): List<Any> {
-    var tokens = yaml().tokenize("load-all", bytes, false)
+public fun loadAll(bytes: ByteArray): List<Any> = load(yaml().tokenize("load-all", bytes, false))
 
-    val documents = ArrayList<Any>()
-    while (!tokens.none()) {
-        val state = load(tokens)
-        documents.add(state.instance)
-        tokens = state.tokens.dropWhile { it.code != Code.EndDocument }.drop(1)
-        if (!tokens.none() && tokens.first().code == Code.DocumentEnd) {
-            tokens = tokens.drop(1)
+private fun load(tokens: Sequence<Token>): List<Any> {
+    val anchors = HashMap<String, Any>()
+
+    val context = Stack<Context>()
+    context.push(ListContext())
+
+    tokens.forEach {
+        visitor(it.code).visit(anchors, context, it)
+    }
+
+    val result = context.pop().peek()
+    if (result is List<*>) {
+        return result as List<Any>
+    }
+    throw IllegalStateException("unexpected result: $result")
+}
+
+private fun visitor(code: Code): Visitor = when (code) {
+    Code.Text -> TextVisitor()
+    Code.Meta -> TextVisitor()
+    Code.LineFeed -> EndOfLineVisitor("\n")
+    Code.LineFold -> EndOfLineVisitor(" ")
+    Code.BeginComment -> BeginIgnoreVisitor()
+    Code.EndComment -> EndIgnoreVisitor()
+    Code.BeginAnchor -> BeginVisitor(SingleContext())
+    Code.EndAnchor -> EndVisitor()
+    Code.BeginAlias -> BeginVisitor(SingleContext())
+    Code.EndAlias -> EndAliasVisitor()
+    Code.BeginScalar -> BeginVisitor(ScalarContext())
+    Code.EndScalar -> EndVisitor()
+    Code.BeginSequence -> BeginVisitor(ListContext())
+    Code.EndSequence -> EndVisitor()
+    Code.BeginMapping -> BeginVisitor(MapContext())
+    Code.EndMapping -> EndVisitor()
+    Code.BeginPair -> BeginVisitor(PairContext())
+    Code.EndPair -> EndVisitor()
+    Code.BeginNode -> BeginVisitor(NodeContext())
+    Code.EndNode -> EndNodeVisitor()
+    Code.BeginDocument -> BeginVisitor(SingleContext())
+    Code.EndDocument -> EndVisitor()
+    Code.Error -> ErrorVisitor()
+    else -> SKIP
+}
+
+abstract private class Context {
+    protected val data: MutableList<Any> = ArrayList()
+
+    fun add(any: Any) = data.add(any)
+
+    abstract fun peek(): Any
+}
+
+private class SingleContext : Context() {
+    override fun peek(): Any = data.first()
+}
+
+private class ScalarContext : Context() {
+    override fun peek(): Any = data.joinToString("")
+}
+
+private class NodeContext : Context() {
+    override fun peek(): Any = if (data.size > 1) Pair(data.first(), data[1]) else Pair("", data.first())
+}
+
+private class ListContext : Context() {
+    override fun peek(): Any = data
+}
+
+private class MapContext : Context() {
+    override fun peek(): Any {
+        val map: MutableMap<Any, Any> = HashMap()
+        for (element in data) {
+            if (element is Pair<*, *>) {
+                map.put(element.first!!, element.second!!)
+            }
         }
+        return map
     }
-
-    return documents
 }
 
-private fun load(tokens: Sequence<Token>): State<Any> = DOCUMENT.load(State(Any(), tokens, HashMap()))
-
-class State<T>(val instance: T, val tokens: Sequence<Token>, val context: MutableMap<String, Any>) {
-    fun copy(remaining: Sequence<Token>): State<T> = State(instance, remaining, context)
-
-    fun <R> copy(loaded: R): State<R> = State(loaded, tokens, context)
-
-    fun <R> copy(loaded: R, remaining: Sequence<Token>): State<R> = State(loaded, remaining, context)
+private class PairContext : Context() {
+    override fun peek(): Any = Pair(data[0], data[1])
 }
 
-interface Loader {
-    fun load(state: State<Any>): State<out Any>
+private interface Visitor {
+    fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token)
 }
 
-private object DOCUMENT : Loader {
-    override fun load(state: State<Any>): State<Any> = NODE.load(state.copy(state.tokens.dropWhile { it.code != Code.BeginDocument }.drop(1)))
+private class BeginVisitor(val context: Context) : Visitor {
+    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
+        contexts.push(context)
+    }
 }
 
-private object NODE : Loader {
-    override fun load(state: State<Any>): State<Any> {
-        var remaining = state.tokens.dropWhile {
-            it.code != Code.BeginNode
-        }.drop(1).dropWhile {
-            it.code !in arrayOf(Code.BeginProperties, Code.BeginAlias, Code.BeginScalar, Code.BeginMapping, Code.BeginSequence)
+private class BeginIgnoreVisitor : Visitor {
+    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
+        contexts.push(object : Context() {
+            override fun peek(): Any = throw UnsupportedOperationException()
+        })
+    }
+}
+
+private class EndIgnoreVisitor : Visitor {
+    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
+        contexts.pop()
+    }
+}
+
+private class EndVisitor : Visitor {
+    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
+        val top = contexts.pop()
+        contexts.peek().add(top.peek())
+    }
+}
+
+private class EndNodeVisitor : Visitor {
+    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
+        val top = contexts.pop().peek() as Pair<Any, Any>
+        if (top.first.toString().isNotEmpty()) {
+            anchors.put(top.first.toString(), top.second)
         }
-
-        val anchor = if (remaining.first().code == Code.BeginProperties) {
-            val theAnchor = ANCHOR.load(state.copy(remaining))
-            remaining = theAnchor.tokens
-            theAnchor
-        } else {
-            null
-        }
-
-        val loaded = when (remaining.first().code) {
-            Code.BeginAlias -> ALIAS.load(state.copy(remaining.drop(1)))
-            Code.BeginScalar -> SCALAR.load(state.copy(remaining.drop(1)))
-            Code.BeginMapping -> MAPPING.load(state.copy(remaining.drop(1)))
-            Code.BeginSequence -> SEQUENCE.load(state.copy(remaining.drop(1)))
-            else -> throw IllegalStateException("not expected")
-        }
-
-        if (anchor != null) {
-            loaded.context.put(anchor.instance.toString(), loaded.instance)
-        }
-
-        return loaded
+        contexts.peek().add(top.second)
     }
 }
 
-private object ANCHOR : Loader {
-    override fun load(state: State<Any>): State<Any> {
-        val alias = state.tokens.dropWhile {
-            it.code != Code.BeginAnchor
-        }.takeWhile {
-            it.code != Code.EndAnchor
-        }.filter {
-            it.code == Code.Meta
-        }.map {
-            it.text.toString()
-        }.first()
-
-        return state.copy(alias, state.tokens.dropWhile { it.code !in arrayOf(Code.BeginScalar, Code.BeginMapping, Code.BeginSequence) })
+private class EndAliasVisitor : Visitor {
+    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
+        val top = contexts.pop()
+        contexts.peek().add(anchors[top.peek().toString()]!!)
     }
 }
 
-private object ALIAS : Loader {
-    override fun load(state: State<Any>): State<Any> {
-        val alias = state.tokens.takeWhile {
-            it.code != Code.EndAlias
-        }.filter {
-            it.code == Code.Meta
-        }.map {
-            it.text.toString()
-        }.first()
-
-        return state.copy(state.context[alias]!!, state.tokens.dropWhile { it.code != Code.EndAlias })
+private class TextVisitor() : Visitor {
+    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
+        contexts.peek().add(token.text.toString())
     }
 }
 
-private object SCALAR : Loader {
-    override fun load(state: State<Any>): State<Any> {
-        val text = state.tokens.dropWhile {
-            it.code != Code.Text
-        }.takeWhile {
-            it.code != Code.EndScalar
-        }.filter {
-            it.code == Code.Text
-        }.map {
-            it.text.toString()
-        }.joinToString(" ")
-
-        return state.copy(text, state.tokens.dropWhile { it.code != Code.EndScalar })
-    }
-
-}
-
-private object MAPPING : Loader {
-    override fun load(state: State<Any>): State<Any> {
-        val loaded = HashMap<Any, Any>()
-        var remaining = state.tokens.dropWhile { it.code != Code.BeginPair }
-
-        while (!remaining.none() && remaining.first().code != Code.EndMapping) {
-            var pairState = PAIR.load(state.copy(remaining.drop(1)))
-            loaded.put(pairState.instance.first, pairState.instance.second)
-
-            remaining = pairState.tokens.dropWhile { it.code != Code.BeginPair && it.code != Code.EndMapping }
-        }
-
-        return state.copy(loaded, if (!remaining.none() && remaining.first().code == Code.EndMapping) remaining.drop(1) else remaining)
+private class EndOfLineVisitor(val join: String) : Visitor {
+    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
+        contexts.peek().add(join)
     }
 }
 
-private object PAIR : Loader {
-    override fun load(state: State<Any>): State<Pair<Any, Any>> {
-        val keyState = NODE.load(state)
-        val valueState = NODE.load(keyState)
-        return valueState.copy(Pair(keyState.instance, valueState.instance))
+private class ErrorVisitor() : Visitor {
+    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
+        throw IllegalStateException("${token.text.toString()} - Line #${token.line} , Character #${token.lineChar + 1}")
     }
 }
 
-private object SEQUENCE : Loader {
-    override fun load(state: State<Any>): State<Any> {
-        val loaded = ArrayList<Any>()
-        var remaining = state.tokens.dropWhile { it.code != Code.BeginNode }
-
-        while (!remaining.none() && remaining.first().code != Code.EndSequence) {
-            var nodeState = NODE.load(state.copy(remaining))
-            loaded.add(nodeState.instance)
-            remaining = nodeState.tokens.dropWhile { it.code != Code.BeginNode && it.code != Code.EndSequence }
-        }
-
-        return state.copy(loaded, remaining)
+private object SKIP : Visitor {
+    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
+        //do nothing
     }
 }
-
