@@ -97,4 +97,4 @@ fun intToDigit(n: Int): Char = if (n < 10) (48 + n).toChar() else (87 + n).toCha
 /**
  * Converts a list of tokens to a multi-line YEAST text.
  */
-fun showTokens(tokens: Sequence<Token>): String = tokens.fold("") { text, token -> text.concat(token.toString()) }
+fun showTokens(tokens: Sequence<Token>): String = tokens.fold("") { text, token -> text + token.toString() }
