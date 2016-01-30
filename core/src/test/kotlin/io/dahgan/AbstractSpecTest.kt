@@ -14,7 +14,7 @@ abstract class AbstractSpecTest {
     companion object {
         val BASE_PATH = File(SpecTest::class.java.getResource("/io/dahgan/").file)
 
-        public fun products(dir: String, filter: (String) -> Boolean): Collection<Array<String>> =
+        fun products(dir: String, filter: (String) -> Boolean): Collection<Array<String>> =
                 File(BASE_PATH, dir).listFiles { path, file ->
                     file.endsWith(".input") && filter(file)
                 }.map { file ->
@@ -23,10 +23,10 @@ abstract class AbstractSpecTest {
     }
 
     @Parameterized.Parameter(0)
-    public lateinit var name: String
+    lateinit var name: String
 
     @Parameterized.Parameter(1)
-    public lateinit var path: String
+    lateinit var path: String
 
     protected fun run() {
         val file = File(path)
@@ -84,7 +84,7 @@ abstract class AbstractSpecTest {
         override fun toString(): String = text
 
         companion object {
-            public fun type(test: String): TestType {
+            fun type(test: String): TestType {
                 return when(Triple(isWith("n", test), isWith("c", test), isWith("t", test))) {
                     Triple(false, false, false) -> Plain
                     Triple(true, false, false)  -> WithN
