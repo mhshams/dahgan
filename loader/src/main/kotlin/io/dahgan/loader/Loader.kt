@@ -10,37 +10,37 @@ import java.util.*
  * Loads the first yaml document in the given text and returns the loaded object.
  * Depending on the content, the result can be a simple text, a map or a list.
  */
-public fun load(text: String): Any = load(text.toByteArray(Charsets.UTF_8))
+fun load(text: String): Any = load(text.toByteArray(Charsets.UTF_8))
 
 /**
  * Loads the first yaml document in the given file and returns the loaded object.
  * Depending on the content, the result can be a simple text, a map or a list.
  */
-public fun load(file: File): Any = load(file.readBytes())
+fun load(file: File): Any = load(file.readBytes())
 
 /**
  * Loads the first yaml document in the given byte array and returns the loaded object.
  * Depending on the content, the result can be a simple text, a map or a list.
  */
-public fun load(bytes: ByteArray): Any = load(yaml().tokenize("load", bytes, false))[0]
+fun load(bytes: ByteArray): Any = load(yaml().tokenize("load", bytes, false))[0]
 
 /**
  * Loads all yaml documents in the given text and returns the loaded objects.
  * The result is a list of loaded objects.
  */
-public fun loadAll(text: String): List<Any> = loadAll(text.toByteArray(Charsets.UTF_8))
+fun loadAll(text: String): List<Any> = loadAll(text.toByteArray(Charsets.UTF_8))
 
 /**
  * Loads all yaml documents in the given file and returns the loaded objects.
  * The result is a list of loaded objects.
  */
-public fun loadAll(file: File): List<Any> = loadAll(file.readBytes())
+fun loadAll(file: File): List<Any> = loadAll(file.readBytes())
 
 /**
  * Loads all yaml documents in the given byte array and returns the loaded objects.
  * The result is a list of loaded objects.
  */
-public fun loadAll(bytes: ByteArray): List<Any> = load(yaml().tokenize("load-all", bytes, false))
+fun loadAll(bytes: ByteArray): List<Any> = load(yaml().tokenize("load-all", bytes, false))
 
 private fun load(tokens: Sequence<Token>): List<Any> {
     val anchors = HashMap<String, Any>()
