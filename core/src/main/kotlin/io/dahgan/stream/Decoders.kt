@@ -81,7 +81,7 @@ class UTF16Decoder private constructor(val combine: (Int, Int) -> Int) : Decoder
     /**
      * Decodes a UTF-16 (LE or BE) byte array to a unicode char.
      */
-    protected fun undo(bytes: ByteArray, offset: Int): UniChar {
+    private fun undo(bytes: ByteArray, offset: Int): UniChar {
         if (hasFewerThan(offset, 2, bytes)) {
             throw IllegalArgumentException("UTF-16 input contains odd number of bytes")
         }

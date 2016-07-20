@@ -36,10 +36,16 @@
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
+    <repositories>
+        <repository>
+            <id>milestones</id>
+            <url> https://dl.bintray.com/kotlin/kotlin-eap-1.1</url>
+        </repository>
+    </repositories>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <kotlin.version>1.0.0</kotlin.version>
+        <kotlin.version>1.1-M01</kotlin.version>
         <maven.compiler.version>3.3</maven.compiler.version>
         <maven.source.version>2.4</maven.source.version>
         <maven.jar.version>2.6</maven.jar.version>
@@ -169,5 +175,31 @@
                 </plugins>
             </build>
         </profile>
-    </profiles>
+        <profile>
+            <id>bintray</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <repositories>
+                <repository>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                    <id>bintray-kotlin-kotlin-eap-1.1</id>
+                    <name>bintray</name>
+                    <url>http://dl.bintray.com/kotlin/kotlin-eap-1.1</url>
+                </repository>
+            </repositories>
+            <pluginRepositories>
+                <pluginRepository>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                    <id>bintray-kotlin-kotlin-eap-1.1</id>
+                    <name>bintray-plugins</name>
+                    <url>http://dl.bintray.com/kotlin/kotlin-eap-1.1</url>
+                </pluginRepository>
+            </pluginRepositories>
+        </profile>
+</profiles>
 </project>
