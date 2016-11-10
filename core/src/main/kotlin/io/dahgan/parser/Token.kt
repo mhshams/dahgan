@@ -84,7 +84,7 @@ fun escape(code: Int): String = when {
  * Escapes all the non-ASCII characters in the given text, as well as escaping
  * the \\ character, using the \\xXX, \\uXXXX and \\UXXXXXXXX escape sequences.
  */
-fun escape(text: IntArray, separator: String = ", "): String = text.map { escape(it) }.joinToString(separator)
+fun escape(text: IntArray, separator: String = ", "): String = text.map(::escape).joinToString(separator)
 
 /**
  * Converts the int to the specified number of hexadecimal digits.

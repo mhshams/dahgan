@@ -256,7 +256,7 @@ fun finishToken(): Parser = { state ->
  */
 fun token(code: Code, parser: Parser): Parser = finishToken() and with(
         { state: State, code: Code? -> state.copy(code = code!!) },
-        { state -> state.code },
+        State::code,
         code,
         parser and finishToken())
 
@@ -486,7 +486,7 @@ fun <T> with(set: (State, T?) -> State, get: (State) -> T, value: T?, parser: Pa
  */
 fun forbidding(parser: Parser, forbidden: Parser): Parser = with(
         { state: State, forbidden: Parser? -> state.copy(forbidden = forbidden) },
-        { state -> state.forbidden },
+        State::forbidden,
         forbidden and empty(),
         parser)
 
@@ -495,7 +495,7 @@ fun forbidding(parser: Parser, forbidden: Parser): Parser = with(
  */
 fun limitedTo(parser: Parser, limit: Int): Parser = with(
         { state: State, limit: Int? -> state.copy(limit = limit!!) },
-        { state -> state.limit },
+        State::limit,
         limit,
         parser)
 

@@ -3,14 +3,16 @@ package io.dahgan.stream
 /**
  * Decodes a UTF-32 (LE or BE) byte array to unicode characters.
  */
-class UTF32Decoder private constructor(val combine: (Int, Int, Int, Int) -> Int) : Decoder {
+class UTF32Decoder
+private constructor(val combine: (Int, Int, Int, Int) -> Int) : Decoder {
+
     companion object {
         /**
          * Decodes a UTF-32BE byte array to unicode characters.
          *
          * Combine function combines two bytes of a UTF-32BE character and returns the result.
          */
-        fun be(): UTF32Decoder = UTF32Decoder() { first, second, third, fourth ->
+        fun be(): UTF32Decoder = UTF32Decoder { first, second, third, fourth ->
             fourth + 256 * (third + 256 * (second + 256 * first))
         }
 
@@ -19,7 +21,7 @@ class UTF32Decoder private constructor(val combine: (Int, Int, Int, Int) -> Int)
          *
          * Combine function combines two bytes of a UTF-32LE character and returns the result.
          */
-        fun le(): UTF32Decoder = UTF32Decoder() { first, second, third, fourth ->
+        fun le(): UTF32Decoder = UTF32Decoder { first, second, third, fourth ->
             first + 256 * (second + 256 * (third + 256 * fourth))
         }
     }
@@ -44,21 +46,23 @@ class UTF32Decoder private constructor(val combine: (Int, Int, Int, Int) -> Int)
 /**
  * Decodes a UTF-16 (LE or BE) byte array to unicode characters.
  */
-class UTF16Decoder private constructor(val combine: (Int, Int) -> Int) : Decoder {
+class UTF16Decoder
+private constructor(val combine: (Int, Int) -> Int) : Decoder {
+
     companion object {
         /**
          * Decodes a UTF-16BE byte array to unicode characters.
          *
          * Combine function combines two bytes of a UTF-16BE character and returns the result.
          */
-        fun be(): UTF16Decoder = UTF16Decoder() { first, second -> second + first * 256 }
+        fun be(): UTF16Decoder = UTF16Decoder { first, second -> second + first * 256 }
 
         /**
          * Decodes a UTF-16LE byte array to unicode characters.
          *
          * Combine function combines two bytes of a UTF-16LE character and returns the result.
          */
-        fun le(): UTF16Decoder = UTF16Decoder() { first, second -> first + second * 256 }
+        fun le(): UTF16Decoder = UTF16Decoder { first, second -> first + second * 256 }
     }
 
     /**

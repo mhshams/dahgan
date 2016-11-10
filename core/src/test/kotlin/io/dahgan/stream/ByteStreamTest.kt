@@ -19,7 +19,7 @@ class ByteStreamTest {
         val defaultUTF16LE = ByteStream("Yaml".toByteArray(Charset.forName("UTF-16LE")))
         val defaultUTF8 = ByteStream("Yaml".toByteArray(Charset.forName("UTF-8")))
 
-        fun of(vararg elements: Int) = elements.map { it.toByte() }.toByteArray()
+        fun of(vararg elements: Int) = elements.map(Int::toByte).toByteArray()
     }
 
     @Test
