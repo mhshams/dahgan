@@ -1,7 +1,7 @@
 package io.dahgan.stream
 
+import org.junit.Assert.assertEquals
 import org.junit.Test
-import kotlin.test.assertEquals
 
 /**
  * UTF-16 decoder tests.

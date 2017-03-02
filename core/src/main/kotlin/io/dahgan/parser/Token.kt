@@ -76,7 +76,7 @@ sealed class Escapable {
 fun escape(code: Int): String = when {
     ' '.toInt() <= code && code != '\\'.toInt() && code <= '~'.toInt() -> "${code.toChar()}"
     code <= 0xFF -> "\\x${toHex(2, code)}"
-    0xFF < code && code <= 0xFFFF -> "\\u${toHex(4, code)}"
+    code in 256..0xFFFF -> "\\u${toHex(4, code)}"
     else -> "\\U${toHex(8, code)}"
 }
 

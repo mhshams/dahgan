@@ -7,7 +7,7 @@ class SpecTest : AbstractSpecTest() {
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "product file({0})")
-        fun products(): Collection<Array<String>> = AbstractSpecTest.products("spec") { file -> true }
+        fun products(): Collection<Array<String>> = AbstractSpecTest.products("spec") { true }
 //            file.startsWith("c-printable")
 //                    || file.startsWith("nb-json")
 //                    || file.startsWith("c-byte-order-mark")

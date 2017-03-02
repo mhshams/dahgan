@@ -7,7 +7,7 @@ class SampleTest : AbstractSpecTest() {
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "product file({0})")
-        fun products(): Collection<Array<String>> = AbstractSpecTest.products("sample") { file -> true }
+        fun products(): Collection<Array<String>> = AbstractSpecTest.products("sample") { true }
     }
 
     @Test
