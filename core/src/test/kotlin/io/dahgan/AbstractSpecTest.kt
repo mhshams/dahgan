@@ -3,11 +3,11 @@ package io.dahgan
 import io.dahgan.parser.Chomp
 import io.dahgan.parser.Context
 import io.dahgan.parser.showTokens
+import org.junit.Assert.assertEquals
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import java.io.File
 import java.util.regex.Pattern
-import kotlin.test.assertEquals
 
 @RunWith(Parameterized::class)
 abstract class AbstractSpecTest {
@@ -15,7 +15,7 @@ abstract class AbstractSpecTest {
         val BASE_PATH = File(SpecTest::class.java.getResource("/io/dahgan/").file)
 
         fun products(dir: String, filter: (String) -> Boolean): Collection<Array<String>> =
-                File(BASE_PATH, dir).listFiles { path, file ->
+                File(BASE_PATH, dir).listFiles { _, file ->
                     file.endsWith(".input") && filter(file)
                 }.map { file ->
                     arrayOf(file.name, file.absolutePath)
@@ -44,7 +44,7 @@ abstract class AbstractSpecTest {
         }
         val output = showTokens(tokenizer.tokenize(name, input, false))
 
-        assertEquals(expected, output, message(input, expected, output))
+        assertEquals(message(input, expected, output), expected, output)
     }
 
     protected fun message(input: ByteArray, expected: String, output: String): String =

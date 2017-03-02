@@ -7,7 +7,7 @@ import io.dahgan.stream.Stream
  * Invokes the parser and then consumes all remaining unparsed input characters.
  */
 private fun consume(parser: Parser): Parser {
-    val cleanInput = Parser { state -> returnReply(state.copy(input = Stream.empty()), "") }
+    val cleanInput = { state: State -> returnReply(state.copy(input = Stream.empty()), "") }
 
     return parser.snd("result", finishToken()) and cleanInput and peekResult("result")
 }
@@ -248,34 +248,36 @@ val tokenizersWithNT = mapOf<String, (Int, Chomp) -> Tokenizer>(
  * Converts the production with the specified name to a simple Tokenizer,
  * or throws IllegalArgumentException if it isn't known.
  */
-fun tokenizer(name: String): Tokenizer = tokenizers.getOrElse(name) { throw IllegalArgumentException("Tokenizer ($name) not found") }
+fun tokenizer(name: String) = tokenizers.getOrElse(name) { notFound(name) }
 
 /**
  * Converts the production, that requires an n argument, with the specified name to a simple Tokenizer,
  * or throws IllegalArgumentException if it isn't known.
  */
-fun tokenizerWithN(name: String, n: Int) = tokenizersWithN.getOrElse(name) { throw IllegalArgumentException("Tokenizer ($name) not found") }(n)
+fun tokenizerWithN(name: String, n: Int) = tokenizersWithN.getOrElse(name) { return notFound(name) }(n)
 
 /**
  * Converts the production, that requires a c argument, with the specified name to a simple Tokenizer,
  * or throws IllegalArgumentException if it isn't known.
  */
-fun tokenizerWithC(name: String, c: Context) = tokenizersWithC.getOrElse(name) { throw IllegalArgumentException("Tokenizer ($name) not found") }(c)
+fun tokenizerWithC(name: String, c: Context) = tokenizersWithC.getOrElse(name) { return notFound(name) }(c)
 
 /**
  * Returns a mapping from a production name to a production tokenizer, that takes a t argument,
  * or throws IllegalArgumentException if it isn't known.
  */
-fun tokenizerWithT(name: String, t: Chomp) = tokenizersWithT.getOrElse(name) { throw IllegalArgumentException("Tokenizer ($name) not found") }(t)
+fun tokenizerWithT(name: String, t: Chomp) = tokenizersWithT.getOrElse(name) { return notFound(name) }(t)
 
 /**
  * Converts the production, that requires n and c arguments, with the specified name to a simple Tokenizer,
  * or throws IllegalArgumentException if it isn't known.
  */
-fun tokenizerWithNC(name: String, n: Int, c: Context) = tokenizersWithNC.getOrElse(name) { throw IllegalArgumentException("Tokenizer ($name) not found") }(n, c)
+fun tokenizerWithNC(name: String, n: Int, c: Context) = tokenizersWithNC.getOrElse(name) { return notFound(name) }(n, c)
 
 /**
  * Converts the production, that requires n and t arguments, with the specified name to a simple Tokenizer,
  * or throws IllegalArgumentException if it isn't known.
  */
-fun tokenizerWithNT(name: String, n: Int, t: Chomp) = tokenizersWithNT.getOrElse(name) { throw IllegalArgumentException("Tokenizer ($name) not found") }(n, t)
+fun tokenizerWithNT(name: String, n: Int, t: Chomp) = tokenizersWithNT.getOrElse(name) { return notFound(name) }(n, t)
+
+private fun notFound(name: String): Tokenizer = throw IllegalArgumentException("Tokenizer ($name) not found")
