@@ -1,14 +1,15 @@
 package io.dahgan.loader
 
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * Verifies Loader
  */
 class LoaderTest {
+
     companion object {
         val BASE_PATH = File(LoaderTest::class.java.getResource("/io/dahgan/loader").file)
     }

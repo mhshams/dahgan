@@ -1,10 +1,8 @@
 package io.dahgan.stream
 
-import org.junit.Assert.assertEquals
+import org.junit.Assert.*
 import org.junit.Test
 import java.nio.charset.Charset
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 /**
  * byte stream encoding and data tests.
@@ -19,7 +17,7 @@ class ByteStreamTest {
         val defaultUTF16LE = ByteStream("Yaml".toByteArray(Charset.forName("UTF-16LE")))
         val defaultUTF8 = ByteStream("Yaml".toByteArray(Charset.forName("UTF-8")))
 
-        fun of(vararg elements: Int) = elements.map { it.toByte() }.toByteArray()
+        fun of(vararg elements: Int) = elements.map(Int::toByte).toByteArray()
     }
 
     @Test

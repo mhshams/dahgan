@@ -3,14 +3,16 @@ package io.dahgan.stream
 /**
  * Decodes a UTF-32 (LE or BE) byte array to unicode characters.
  */
-class UTF32Decoder private constructor(val combine: (Int, Int, Int, Int) -> Int) : Decoder {
+class UTF32Decoder
+private constructor(val combine: (Int, Int, Int, Int) -> Int) : Decoder {
+
     companion object {
         /**
          * Decodes a UTF-32BE byte array to unicode characters.
          *
          * Combine function combines two bytes of a UTF-32BE character and returns the result.
          */
-        fun be(): UTF32Decoder = UTF32Decoder() { first, second, third, fourth ->
+        fun be(): UTF32Decoder = UTF32Decoder { first, second, third, fourth ->
             fourth + 256 * (third + 256 * (second + 256 * first))
         }
 
@@ -19,7 +21,7 @@ class UTF32Decoder private constructor(val combine: (Int, Int, Int, Int) -> Int)
          *
          * Combine function combines two bytes of a UTF-32LE character and returns the result.
          */
-        fun le(): UTF32Decoder = UTF32Decoder() { first, second, third, fourth ->
+        fun le(): UTF32Decoder = UTF32Decoder { first, second, third, fourth ->
             first + 256 * (second + 256 * (third + 256 * fourth))
         }
     }
@@ -44,21 +46,23 @@ class UTF32Decoder private constructor(val combine: (Int, Int, Int, Int) -> Int)
 /**
  * Decodes a UTF-16 (LE or BE) byte array to unicode characters.
  */
-class UTF16Decoder private constructor(val combine: (Int, Int) -> Int) : Decoder {
+class UTF16Decoder
+private constructor(val combine: (Int, Int) -> Int) : Decoder {
+
     companion object {
         /**
          * Decodes a UTF-16BE byte array to unicode characters.
          *
          * Combine function combines two bytes of a UTF-16BE character and returns the result.
          */
-        fun be(): UTF16Decoder = UTF16Decoder() { first, second -> second + first * 256 }
+        fun be(): UTF16Decoder = UTF16Decoder { first, second -> second + first * 256 }
 
         /**
          * Decodes a UTF-16LE byte array to unicode characters.
          *
          * Combine function combines two bytes of a UTF-16LE character and returns the result.
          */
-        fun le(): UTF16Decoder = UTF16Decoder() { first, second -> first + second * 256 }
+        fun le(): UTF16Decoder = UTF16Decoder { first, second -> first + second * 256 }
     }
 
     /**
@@ -72,8 +76,8 @@ class UTF16Decoder private constructor(val combine: (Int, Int) -> Int) : Decoder
     override fun decode(bytes: ByteArray, offset: Int): UniChar {
         val head = undo(bytes, offset)
         return when {
-            0xD800 <= head.code && head.code <= 0xDBFF -> combineLead(head, bytes, head.offset)
-            0xDC00 <= head.code && head.code <= 0xDFFF -> throw IllegalArgumentException("UTF-16 contains trail surrogate without lead surrogate")
+            head.code in 0xD800..0xDBFF -> combineLead(head, bytes, head.offset)
+            head.code in 0xDC00..0xDFFF -> throw IllegalArgumentException("UTF-16 contains trail surrogate without lead surrogate")
             else -> head
         }
     }
@@ -81,7 +85,7 @@ class UTF16Decoder private constructor(val combine: (Int, Int) -> Int) : Decoder
     /**
      * Decodes a UTF-16 (LE or BE) byte array to a unicode char.
      */
-    protected fun undo(bytes: ByteArray, offset: Int): UniChar {
+    private fun undo(bytes: ByteArray, offset: Int): UniChar {
         if (hasFewerThan(offset, 2, bytes)) {
             throw IllegalArgumentException("UTF-16 input contains odd number of bytes")
         }
@@ -108,7 +112,7 @@ class UTF16Decoder private constructor(val combine: (Int, Int) -> Int) : Decoder
         val tail = undo(bytes, offset)
         val tailChar = tail.code
 
-        if (0xDC00 <= tail.code && tail.code <= 0xDFFF) {
+        if (tail.code in 0xDC00..0xDFFF) {
             return UniChar(tail.offset, combineSurrogates(lead.code, tailChar))
         }
         throw IllegalArgumentException("UTF-16 contains lead surrogate without trail surrogate")
@@ -162,8 +166,7 @@ class UTF8Decoder : Decoder {
      * Combines the first and second bytes of a two-byte UTF-8 char into a single unicode char.
      */
     private fun combineTwoUTF8(first: Int, second: Int) =
-            (first - 0xC0) * 64 +
-                    (second - 0x80)
+            (first - 0xC0) * 64 + (second - 0x80)
 
     /**
      * Decodes a three-byte UTF-8 character,
@@ -189,9 +192,7 @@ class UTF8Decoder : Decoder {
      * Combines the first, second and third bytes of a three-byte UTF-8 char into a single unicode char.
      */
     private fun combineThreeUTF8(first: Int, second: Int, third: Int) =
-            (first - 0xE0) * 4096 +
-                    (second - 0x80) * 64 +
-                    (third - 0x80)
+            (first - 0xE0) * 4096 + (second - 0x80) * 64 + (third - 0x80)
 
     /**
      * Decodes a four-byte UTF-8 character, where the first byte is already available and the second, third and fourth
@@ -218,10 +219,7 @@ class UTF8Decoder : Decoder {
      * Combines the first, second, third and fourth bytes of a four-byte UTF-8 char into a single unicode char.
      */
     private fun combineFourUTF8(first: Int, second: Int, third: Int, fourth: Int) =
-            (first - 0xF0) * 262144 +
-                    (second - 0x80) * 4096 +
-                    (third - 0x80) * 64 +
-                    (fourth - 0x80)
+            (first - 0xF0) * 262144 + (second - 0x80) * 4096 + (third - 0x80) * 64 + (fourth - 0x80)
 }
 
 /**

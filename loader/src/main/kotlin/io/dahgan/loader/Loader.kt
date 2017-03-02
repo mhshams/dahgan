@@ -111,15 +111,7 @@ private class ListContext : Context() {
 }
 
 private class MapContext : Context() {
-    override fun peek(): Any {
-        val map: MutableMap<Any, Any> = HashMap()
-        for (element in data) {
-            if (element is Pair<*, *>) {
-                map.put(element.first!!, element.second!!)
-            }
-        }
-        return map
-    }
+    override fun peek(): Any = data.filterIsInstance<Pair<*, *>>().toMap()
 }
 
 private class PairContext : Context() {
@@ -174,7 +166,7 @@ private class EndAliasVisitor : Visitor {
     }
 }
 
-private class TextVisitor() : Visitor {
+private class TextVisitor : Visitor {
     override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
         contexts.peek().add(token.text.toString())
     }
@@ -186,9 +178,9 @@ private class EndOfLineVisitor(val join: String) : Visitor {
     }
 }
 
-private class ErrorVisitor() : Visitor {
+private class ErrorVisitor : Visitor {
     override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
-        throw IllegalStateException("${token.text.toString()} - Line #${token.line} , Character #${token.lineChar + 1}")
+        throw IllegalStateException("${token.text} - Line #${token.line} , Character #${token.lineChar + 1}")
     }
 }
 
