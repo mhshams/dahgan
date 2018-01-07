@@ -15,26 +15,26 @@ class LoaderTest {
     }
 
     @Test
-    fun loadEmpty() {
+    fun `load empty document`() {
         assertEquals("", load("---\n# a comment \n..."))
     }
 
     @Test
-    fun loadSingleScalar() {
+    fun `load single scalar`() {
         val text = "a single scalar"
 
         assertScalar(text, load(text))
     }
 
     @Test
-    fun loadSinglePair() {
+    fun `load single pair`() {
         val text = "foo: bar"
 
         assertPair("foo", "bar", load(text))
     }
 
     @Test
-    fun loadSequenceOfScalars() {
+    fun `load sequence of scalars`() {
         val text = """
             - a
             - b
@@ -45,7 +45,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadSequenceOfPairs() {
+    fun `load sequence of pairs`() {
         val text = """
             - a: a value
             - b: b value
@@ -60,7 +60,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadMappingOfSequences() {
+    fun `load mapping of sequences`() {
         val text = """
             a:
                 - foo
@@ -77,7 +77,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadSequenceOfMappings() {
+    fun `load sequence of mappings`() {
         val text = """
             - a:
                 - foo
@@ -97,7 +97,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadMultiLineText() {
+    fun `load multi line text`() {
         val text = """
             comments: |
                 Late afternoon is best.
@@ -109,7 +109,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadFoldedText() {
+    fun `load folded text`() {
         val text = """
             comments: >
                 Late afternoon is best.
@@ -121,7 +121,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadImplicitFoldedText() {
+    fun `load implicit folded text`() {
         val text = """
             comments:
                 Late afternoon is best.
@@ -133,7 +133,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadAnchorAlias() {
+    fun `load anchor alias`() {
         val text = """
             sender: &123
                 name: Nancy Billsmer
@@ -146,7 +146,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadAllScalars() {
+    fun `load all scalars`() {
         val first = "First Scalar"
         val second = "Second Scalar"
         val third = "Third Scalar"
@@ -159,7 +159,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadAllPairs() {
+    fun `load all pairs`() {
         val first = "foo 1: bar 1"
         val second = "foo 2: bar 2"
         val third = "foo 3: bar 3"
@@ -172,7 +172,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadAllSequenceOfScalars() {
+    fun `load all sequence of scalars`() {
         val first = """
             - a
             - b
@@ -189,7 +189,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadAllSequencesOfMappings() {
+    fun `load all sequences of mappings`() {
         val first = """---
             - a:
                 - foo
@@ -215,7 +215,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadCommentsFile() {
+    fun `load comments file`() {
         val comments = assertMapping(2, load(File(BASE_PATH, "comments.yaml")))
 
         assertSequence(listOf("Mark McGwire", "Sammy Sosa"), comments["hr"])
@@ -223,7 +223,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadAllLogFile() {
+    fun `load all log file`() {
         val logs = assertDocuments(3, loadAll(File(BASE_PATH, "log.yaml")))
 
         assertPair("Time", "2001-11-23 15:01:42 -5", logs[0])
@@ -251,7 +251,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadAllGameFile() {
+    fun `load all game file`() {
         val games = assertDocuments(2, loadAll(File(BASE_PATH, "game.yaml")))
 
         assertPair("time", "20:03:20", games[0])
@@ -265,7 +265,7 @@ class LoaderTest {
     }
 
     @Test
-    fun loadInvoiceFile() {
+    fun `load invoice file`() {
         val invoice = load(File(BASE_PATH, "invoice.yaml"))
 
         assertPair("invoice", "34843", invoice)
@@ -300,7 +300,7 @@ class LoaderTest {
     }
 
     @Test(expected = IllegalStateException::class)
-    fun error() {
+    fun `load invalid document`() {
         val text = "foo: bar \nfoo"
 
         assertPair("foo", "bar", load(text))
@@ -326,7 +326,7 @@ class LoaderTest {
     private fun assertSequence(expected: List<*>, container: Any?): List<*> {
         val result = assertSequence(expected.size, container)
 
-        for (i in (0..expected.size - 1)) {
+        for (i in (0 until expected.size)) {
             assertEquals(expected[i], result[i])
         }
 

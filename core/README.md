@@ -136,7 +136,7 @@ c
 ```
 To see more examples of tokenizer, check out the available tests in the source code. 
 
-####YEAST (YAML Elaborate Atomic Syntax Tokens) Table
+#### YEAST (YAML Elaborate Atomic Syntax Tokens) Table
 Name            | Code  | Description
 ----------------|-------|---------------------------------------------
 Bom             | U     | BOM, contains TF8, TF16LE, TF32BE, etc.
