@@ -15,7 +15,7 @@ interface Tokenizer {
 /**
  * Converts the pattern to a simple 'Tokenizer'.
  */
-class PatternTokenizer(val pattern: Parser) : Tokenizer {
+class PatternTokenizer(private val pattern: Parser) : Tokenizer {
 
     override fun tokenize(name: String, input: ByteArray, withFollowing: Boolean): Sequence<Token> {
 
@@ -40,7 +40,7 @@ class PatternTokenizer(val pattern: Parser) : Tokenizer {
  * simple 'Tokenizer' (only used for tests). The result is reported as a token
  * with the Detected 'Code' The result is reported as a token with the Detected 'Code'.
  */
-class ParserTokenizer(val what: String, val parser: Parser) : Tokenizer {
+class ParserTokenizer(private val what: String, val parser: Parser) : Tokenizer {
 
     override fun tokenize(name: String, input: ByteArray, withFollowing: Boolean): Sequence<Token> {
 

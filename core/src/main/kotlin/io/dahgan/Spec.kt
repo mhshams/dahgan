@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName", "ObjectPropertyName")
+
 package io.dahgan
 
 import io.dahgan.parser.*
@@ -927,7 +929,7 @@ fun `c-flow-sequence`(n: Int, c: Context) = wrapTokens(Code.BeginSequence, Code.
  *                                        ns-s-flow-seq-entries(n,c)? )?
  */
 fun `ns-s-flow-seq-entries`(n: Int, c: Context): Parser = `ns-flow-seq-entry`(n, c) and opt(`s-separate`(n, c)) and
-        opt(`c-collect-entry` and opt(`s-separate`(n, c)) and opt({ state -> `ns-s-flow-seq-entries`(n, c)(state) }))
+        opt(`c-collect-entry` and opt(`s-separate`(n, c)) and opt { state -> `ns-s-flow-seq-entries`(n, c)(state) })
 
 /**
  * [139] ns-flow-seq-entry(n,c) ::= ns-flow-pair(n,c) | ns-flow-node(n,c)
@@ -951,7 +953,7 @@ fun `c-flow-mapping`(n: Int, c: Context) = wrapTokens(Code.BeginMapping, Code.En
  *                                         ns-s-flow-map-entries(n,c)? )?
  */
 fun `ns-s-flow-map-entries`(n: Int, c: Context): Parser = `ns-flow-map-entry`(n, c) and opt(`s-separate`(n, c)) and
-        opt(`c-collect-entry` and opt(`s-separate`(n, c)) and opt({ state -> `ns-s-flow-map-entries`(n, c)(state) }))
+        opt(`c-collect-entry` and opt(`s-separate`(n, c)) and opt { state -> `ns-s-flow-map-entries`(n, c)(state) })
 
 /**
  * [142] ns-flow-map-entry(n,c) ::=   ( “?” s-separate(n,c)
@@ -1204,12 +1206,12 @@ fun `l-trail-comments`(n: Int) = `s-indent-lt`(n) and `c-nb-comment-text` and `b
  */
 fun `c-l+literal`(n: Int) = emptyToken(Code.BeginScalar) and (`c-literal` cmt "node") and
         prefixErrorWith(`c-b-block-header`(n), emptyToken(Code.EndScalar)) and
-        text({ state ->
+        text { state ->
             val m = state.yields["m"] as Int
             val t = state.yields["t"] as Chomp
 
             `l-literal-content`(n + m, t)(state)
-        })
+        }
 
 /**
  * [171] l-nb-literal-text(n) ::= l-empty(n,block-in)*
@@ -1241,12 +1243,12 @@ fun `l-literal-content`(n: Int, t: Chomp) = ((`l-nb-literal-text`(n) and zom(`b-
  */
 fun `c-l+folded`(n: Int) = emptyToken(Code.BeginScalar) and (`c-folded` cmt "node") and
         prefixErrorWith(`c-b-block-header`(n), emptyToken(Code.EndScalar)) and
-        text({ state ->
+        text { state ->
             val m = state.yields["m"] as Int
             val t = state.yields["t"] as Chomp
 
             `l-folded-content`(n + m, t)(state)
-        })
+        }
 
 /**
  * [175] s-nb-folded-text(n) ::= s-indent(n) ns-char nb-char*
@@ -1309,10 +1311,10 @@ val `detect-inline-indentation` = peek(`count-spaces`(0))
  *                               /* For some fixed auto-detected m > 0 */
  */
 fun `l+block-sequence`(n: Int) = `detect-collection-indentation`(n).snd("m",
-        wrapTokens(Code.BeginSequence, Code.EndSequence, { state ->
+        wrapTokens(Code.BeginSequence, Code.EndSequence) { state ->
             val m = state.yields["m"] as Int
             oom(`s-indent`(n + m) and `c-l-block-seq-entry`(n + m))(state)
-        }))
+        })
 
 /**
  * [184] c-l-block-seq-entry(n) ::= “-” /* Not followed by an ns-char */
@@ -1349,11 +1351,11 @@ fun `ns-l-in-line-sequence`(n: Int) = wrapTokens(Code.BeginNode, Code.EndNode, w
  * [187] l+block-mapping(n) ::= ( s-indent(n+m) ns-l-block-map-entry(n+m) )+
  *                              /* For some fixed auto-detected m > 0 */
  */
-fun `l+block-mapping`(n: Int) = `detect-collection-indentation`(n).snd("m", wrapTokens(Code.BeginMapping, Code.EndMapping,
-        { state ->
-            val m = state.yields["m"] as Int
-            oom(`s-indent`(n + m) and `ns-l-block-map-entry`(n + m))(state)
-        }))
+fun `l+block-mapping`(n: Int) = `detect-collection-indentation`(n).snd("m", wrapTokens(Code.BeginMapping, Code.EndMapping
+) { state ->
+    val m = state.yields["m"] as Int
+    oom(`s-indent`(n + m) and `ns-l-block-map-entry`(n + m))(state)
+})
 
 /**
  * [188] ns-l-block-map-entry(n) ::=  c-l-block-map-explicit-entry(n)

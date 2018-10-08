@@ -110,7 +110,7 @@ infix fun Parser.lms(n: Int): Parser = when {
  * Parses the specified parser; if it fails, it continues to the recovery parser to recover.
  */
 infix fun Parser.recovery(recover: Parser): Parser = { state ->
-    val unparsed = { state: State -> finishToken()(state.copy(code = Code.Unparsed)) }
+    val unparsed = { it: State -> finishToken()(it.copy(code = Code.Unparsed)) }
     val reply = this(state)
     if (state.isPeek)
         reply
@@ -255,7 +255,7 @@ fun finishToken(): Parser = { state ->
  * Note it collects the text even if there is an error.
  */
 fun token(code: Code, parser: Parser): Parser = finishToken() and with(
-        { state: State, code: Code? -> state.copy(code = code!!) },
+        { state: State, c: Code? -> state.copy(code = c!!) },
         State::code,
         code,
         parser and finishToken())
@@ -450,7 +450,7 @@ fun reject(parser: Parser, name: String?): Parser {
 /**
  * Consumes all the character up to and not including the next point where the specified parser is a match.
  */
-fun upto(parser: Parser): Parser = zom(nla(parser) and nextIf({ true }))
+fun upto(parser: Parser): Parser = zom(nla(parser) and nextIf { true })
 
 /**
  *  Commits the parser to all the decisions up to the most recent parent decision.
@@ -485,7 +485,7 @@ fun <T> with(set: (State, T?) -> State, get: (State) -> T, value: T?, parser: Pa
  * Parses the specified parser ensuring that it does not contain anything matching the forbidden parser.
  */
 fun forbidding(parser: Parser, forbidden: Parser): Parser = with(
-        { state: State, forbidden: Parser? -> state.copy(forbidden = forbidden) },
+        { state: State, f: Parser? -> state.copy(forbidden = f) },
         State::forbidden,
         forbidden and empty(),
         parser)
@@ -494,7 +494,7 @@ fun forbidding(parser: Parser, forbidden: Parser): Parser = with(
  * Parses the specified parser ensuring that it does not consume more than the limit input chars.
  */
 fun limitedTo(parser: Parser, limit: Int): Parser = with(
-        { state: State, limit: Int? -> state.copy(limit = limit!!) },
+        { state: State, l: Int? -> state.copy(limit = l!!) },
         State::limit,
         limit,
         parser)

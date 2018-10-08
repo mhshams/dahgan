@@ -7,12 +7,12 @@ import java.util.*
  */
 class ByteStream(private val input: ByteArray, private val offset: Int = 0) : Stream {
     companion object {
-        private val X00 = 0x00.toByte()
-        private val XFE = 0xFE.toByte()
-        private val XFF = 0xFF.toByte()
-        private val XEF = 0xEF.toByte()
-        private val XBB = 0xBB.toByte()
-        private val XBF = 0xBF.toByte()
+        private const val X00 = 0x00.toByte()
+        private const val XFE = 0xFE.toByte()
+        private const val XFF = 0xFF.toByte()
+        private const val XEF = 0xEF.toByte()
+        private const val XBB = 0xBB.toByte()
+        private const val XBF = 0xBF.toByte()
 
         private val decoders = mapOf(
                 Encoding.UTF8 to UTF8Decoder(),

@@ -11,8 +11,9 @@ import java.util.regex.Pattern
 
 @RunWith(Parameterized::class)
 abstract class AbstractSpecTest {
+
     companion object {
-        val BASE_PATH = File(SpecTest::class.java.getResource("/io/dahgan/").file)
+        private val BASE_PATH = File(SpecTest::class.java.getResource("/io/dahgan/").file)
 
         fun products(dir: String, filter: (String) -> Boolean): Collection<Array<String>> =
                 File(BASE_PATH, dir).listFiles { _, file ->
@@ -40,30 +41,29 @@ abstract class AbstractSpecTest {
             TestType.WithT  -> tokenizerWithT(production(file.name),  paramT(name))
             TestType.WithNC -> tokenizerWithNC(production(file.name), paramN(name), paramC(name))
             TestType.WithNT -> tokenizerWithNT(production(file.name), paramN(name), paramT(name))
-            else            -> throw IllegalArgumentException("unexpected!!!")
         }
         val output = showTokens(tokenizer.tokenize(name, input, false))
 
         assertEquals(message(input, expected, output), expected, output)
     }
 
-    protected fun message(input: ByteArray, expected: String, output: String): String =
+    private fun message(input: ByteArray, expected: String, output: String): String =
             "\n>>>" +
                     "\n> INP $name ----------\n${String(input) }" +
                     "\n> OUT ---------\n$expected" +
                     "\n> BUT ---------\n$output" +
                     "<<<\n"
 
-    protected fun production(file: String): String = file.substring(0, file.indexOf('.'))
+    private fun production(file: String): String = file.substring(0, file.indexOf('.'))
 
-    protected fun paramN(test: String) = parameter("n", test).toInt()
+    private fun paramN(test: String) = parameter("n", test).toInt()
 
-    protected fun paramC(test: String) = Context.from(parameter("c", test).replace("-", "_"))
+    private fun paramC(test: String) = Context.from(parameter("c", test).replace("-", "_"))
 
-    protected fun paramT(test: String) = Chomp.from(parameter("t", test).replace("-", "_"))
+    private fun paramT(test: String) = Chomp.from(parameter("t", test).replace("-", "_"))
 
-    protected fun parameter(p: String, test: String): String  {
-        val matcher = Pattern.compile("(.+).$p=([^\\.]+)(.+)").matcher(test)
+    private fun parameter(p: String, test: String): String  {
+        val matcher = Pattern.compile("(.+).$p=([^.]+)(.+)").matcher(test)
         if (matcher.matches()) {
             return matcher.group(2)
         }
@@ -73,7 +73,7 @@ abstract class AbstractSpecTest {
     /**
      * Different types of test files.
      */
-    enum class TestType(val text: String) {
+    enum class TestType(private val text: String) {
         Plain(""),           //
         WithN(" n"),         // Production requiring $n$ argument.
         WithC(" c"),         // Production requiring $c$ argument.
@@ -96,7 +96,7 @@ abstract class AbstractSpecTest {
                 }
             }
 
-            fun isWith(parameter: String, test: String): Boolean = test.contains(".$parameter=")
+            private fun isWith(parameter: String, test: String): Boolean = test.contains(".$parameter=")
         }
     }
 }
