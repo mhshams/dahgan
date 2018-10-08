@@ -22,7 +22,7 @@ import io.dahgan.parser.*
  *                    | #x85 | [#xA0-#xD7FF] | [#xE000-#xFFFD] /* 16 bit */
  *                    | [#x10000-#x10FFFF]                     /* 32 bit */
  *
- * */
+ */
 val `c-printable` = of(0x9) or 0xA or 0xD or 0x20..0x7E or 0x85 or 0xA0..0xD7FF or 0xE000..0xFFFD or 0x10000..0x10FFFF
 
 /**
