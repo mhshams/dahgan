@@ -135,7 +135,8 @@ val `c-indicator` = `c-sequence-entry` or `c-mapping-key` or `c-mapping-value` o
 /**
  * [23] c-flow-indicator ::= “,” | “[” | “]” | “{” | “}”
  */
-val `c-flow-indicator` = `c-collect-entry` or `c-sequence-start` or `c-sequence-end` or `c-mapping-start` or `c-mapping-end`
+val `c-flow-indicator` =
+    `c-collect-entry` or `c-sequence-start` or `c-sequence-end` or `c-mapping-start` or `c-mapping-end`
 
 /**
  * 5.4 Line Break Characters
@@ -342,16 +343,18 @@ val `ns-esc-32-bit` = indicator('U') cmt "escaped" and meta(`ns-hex-digit` tms 8
  *                        | ns-esc-line-separator | ns-esc-paragraph-separator
  *                        | ns-esc-8-bit | ns-esc-16-bit | ns-esc-32-bit )
  */
-val `c-ns-esc-char` = wrapTokens(Code.BeginEscape, Code.EndEscape,
-        `c-escape` cmt "escape" and ("escaped" cho (
-                `ns-esc-null` or `ns-esc-bell` or `ns-esc-backspace` or
-                        `ns-esc-horizontal-tab` or `ns-esc-line-feed` or
-                        `ns-esc-vertical-tab` or `ns-esc-form-feed` or
-                        `ns-esc-carriage-return` or `ns-esc-escape` or `ns-esc-space` or
-                        `ns-esc-double-quote` or `ns-esc-slash` or `ns-esc-backslash` or
-                        `ns-esc-next-line` or `ns-esc-non-breaking-space` or
-                        `ns-esc-line-separator` or `ns-esc-paragraph-separator` or
-                        `ns-esc-8-bit` or `ns-esc-16-bit` or `ns-esc-32-bit`)))
+val `c-ns-esc-char` = wrapTokens(
+    Code.BeginEscape, Code.EndEscape,
+    `c-escape` cmt "escape" and ("escaped" cho (
+            `ns-esc-null` or `ns-esc-bell` or `ns-esc-backspace` or
+                    `ns-esc-horizontal-tab` or `ns-esc-line-feed` or
+                    `ns-esc-vertical-tab` or `ns-esc-form-feed` or
+                    `ns-esc-carriage-return` or `ns-esc-escape` or `ns-esc-space` or
+                    `ns-esc-double-quote` or `ns-esc-slash` or `ns-esc-backslash` or
+                    `ns-esc-next-line` or `ns-esc-non-breaking-space` or
+                    `ns-esc-line-separator` or `ns-esc-paragraph-separator` or
+                    `ns-esc-8-bit` or `ns-esc-16-bit` or `ns-esc-32-bit`))
+)
 
 /**
  * 6.1 Indentation Spaces
@@ -513,8 +516,10 @@ fun `s-separate-lines`(n: Int) = `s-l-comments` and `s-flow-line-prefix`(n) or `
  *                     | ns-reserved-directive )
  *                     s-l-comments
  */
-val `l-directive` = (wrapTokens(Code.BeginDirective, Code.EndDirective, (`c-directive` cmt "doc") and
-        ("directive" cho (`ns-yaml-directive`() or `ns-tag-directive`() or `ns-reserved-directive`())))) and `s-l-comments`
+val `l-directive` = (wrapTokens(
+    Code.BeginDirective, Code.EndDirective, (`c-directive` cmt "doc") and
+            ("directive" cho (`ns-yaml-directive`() or `ns-tag-directive`() or `ns-reserved-directive`()))
+)) and `s-l-comments`
 
 /**
  * [83] ns-reserved-directive ::= ns-directive-name
@@ -540,7 +545,8 @@ fun `ns-directive-parameter`() = meta(oom(`ns-char`))
  * [86] ns-yaml-directive ::= “Y” “A” “M” “L”
  *                            s-separate-in-line ns-yaml-version
  */
-fun `ns-yaml-directive`() = (meta('Y' and 'A' and 'M' and 'L') cmt "directive") and `s-separate-in-line` and `ns-yaml-version`()
+fun `ns-yaml-directive`() =
+    (meta('Y' and 'A' and 'M' and 'L') cmt "directive") and `s-separate-in-line` and `ns-yaml-version`()
 
 /**
  * [87] ns-yaml-version ::= ns-dec-digit+ “.” ns-dec-digit+
@@ -583,7 +589,8 @@ fun `c-secondary-tag-handle`() = wrapTokens(Code.BeginHandle, Code.EndHandle, `c
 /**
  * [92] c-named-tag-handle ::= “!” ns-word-char+ “!”
  */
-fun `c-named-tag-handle`() = wrapTokens(Code.BeginHandle, Code.EndHandle, `c-tag` and meta(oom(`ns-word-char`) and `c-tag`))
+fun `c-named-tag-handle`() =
+    wrapTokens(Code.BeginHandle, Code.EndHandle, `c-tag` and meta(oom(`ns-word-char`) and `c-tag`))
 
 /**
  * 6.8.2.2 Tag Prefixes
@@ -614,9 +621,11 @@ fun `ns-global-tag-prefix`() = meta(`ns-tag-char` and zom(`ns-uri-char`))
  *                              | ( c-ns-anchor-property
  *                                  ( s-separate(n,c) c-ns-tag-property )? )
  */
-fun `c-ns-properties`(n: Int, c: Context) = wrapTokens(Code.BeginProperties, Code.EndProperties,
-        (`c-ns-tag-property`() and opt(`s-separate`(n, c) and `c-ns-anchor-property`)) or
-                (`c-ns-anchor-property` and opt(`s-separate`(n, c) and `c-ns-tag-property`())))
+fun `c-ns-properties`(n: Int, c: Context) = wrapTokens(
+    Code.BeginProperties, Code.EndProperties,
+    (`c-ns-tag-property`() and opt(`s-separate`(n, c) and `c-ns-anchor-property`)) or
+            (`c-ns-anchor-property` and opt(`s-separate`(n, c) and `c-ns-tag-property`()))
+)
 
 /**
  * 6.9.1 Node Tags
@@ -627,7 +636,8 @@ fun `c-ns-properties`(n: Int, c: Context) = wrapTokens(Code.BeginProperties, Cod
  *                           | c-ns-shorthand-tag
  *                           | c-non-specific-tag
  */
-fun `c-ns-tag-property`() = wrapTokens(Code.BeginTag, Code.EndTag, `c-verbatim-tag`() or `c-ns-shorthand-tag`() or `c-non-specific-tag`())
+fun `c-ns-tag-property`() =
+    wrapTokens(Code.BeginTag, Code.EndTag, `c-verbatim-tag`() or `c-ns-shorthand-tag`() or `c-non-specific-tag`())
 
 /**
  * [98] c-verbatim-tag ::= “!” “<” ns-uri-char+ “>”
@@ -702,8 +712,10 @@ val `ns-double-char` = `nb-double-char` not `s-white`
 /**
  * [109] c-double-quoted(n,c) ::= “"” nb-double-text(n,c) “"”
  */
-fun `c-double-quoted`(n: Int, c: Context) = wrapTokens(Code.BeginScalar, Code.EndScalar, (`c-double-quote` cmt "node") and
-        text(`nb-double-text`(n, c)) and `c-double-quote`)
+fun `c-double-quoted`(n: Int, c: Context) = wrapTokens(
+    Code.BeginScalar, Code.EndScalar, (`c-double-quote` cmt "node") and
+            text(`nb-double-text`(n, c)) and `c-double-quote`
+)
 
 /**
  * [110] nb-double-text(n,c) ::= c = flow-out  ⇒ nb-double-multi-line(n)
@@ -776,8 +788,10 @@ val `ns-single-char` = `nb-single-char` not `s-white`
 /**
  * [120] c-single-quoted(n,c) ::= “'” nb-single-text(n,c) “'”
  */
-fun `c-single-quoted`(n: Int, c: Context) = wrapTokens(Code.BeginScalar, Code.EndScalar,
-        (`c-single-quote` cmt "node") and text(`nb-single-text`(n, c)) and `c-single-quote`)
+fun `c-single-quoted`(n: Int, c: Context) = wrapTokens(
+    Code.BeginScalar, Code.EndScalar,
+    (`c-single-quote` cmt "node") and text(`nb-single-text`(n, c)) and `c-single-quote`
+)
 
 /**
  * [121] nb-single-text(n,c) ::= c = flow-out  ⇒ nb-single-multi-line(n)
@@ -826,7 +840,7 @@ fun `nb-single-multi-line`(n: Int) = `nb-ns-single-in-line` and (`s-single-next-
  *                            | ( ( “?” | “:” | “-” )
  *                              /* Followed by an ns-plain-safe(c)) */ )
  */
-@Suppress("UNUSED-PARAMETER")
+@Suppress("UNUSED_PARAMETER")
 fun `ns-plain-first`(c: Context) = (`ns-char` not `c-indicator`) or (('?' or ':' or '-') and pla(`ns-char`))
 
 /**
@@ -865,13 +879,17 @@ fun `ns-plain-char`(c: Context) = `ns-plain-safe`(c) or (plb(`ns-char`) and '#')
  *                         c = block-key ⇒ ns-plain-one-line(c)
  *                         c = flow-key  ⇒ ns-plain-one-line(c)
  */
-fun `ns-plain`(n: Int, c: Context) = wrapTokens(Code.BeginScalar, Code.EndScalar, text(when (c) {
-    Context.FlowOut -> `ns-plain-multi-line`(n, c)
-    Context.FlowIn -> `ns-plain-multi-line`(n, c)
-    Context.BlockKey -> `ns-plain-one-line`(c)
-    Context.FlowKey -> `ns-plain-one-line`(c)
-    else -> throw IllegalArgumentException("unexpected")
-}))
+fun `ns-plain`(n: Int, c: Context) = wrapTokens(
+    Code.BeginScalar, Code.EndScalar, text(
+        when (c) {
+            Context.FlowOut -> `ns-plain-multi-line`(n, c)
+            Context.FlowIn -> `ns-plain-multi-line`(n, c)
+            Context.BlockKey -> `ns-plain-one-line`(c)
+            Context.FlowKey -> `ns-plain-one-line`(c)
+            else -> throw IllegalArgumentException("unexpected")
+        }
+    )
+)
 
 /**
  * [132] nb-ns-plain-in-line(c) ::= ( s-white* ns-plain-char(c) )*
@@ -920,8 +938,10 @@ fun `in-flow`(c: Context) = when (c) {
  * [137] c-flow-sequence(n,c) ::= “[” s-separate(n,c)?
  *                                ns-s-flow-seq-entries(n,in-flow(c))? “]”
  */
-fun `c-flow-sequence`(n: Int, c: Context) = wrapTokens(Code.BeginSequence, Code.EndSequence, (`c-sequence-start` cmt "node") and
-        opt(`s-separate`(n, c)) and opt(`ns-s-flow-seq-entries`(n, `in-flow`(c))) and `c-sequence-end`)
+fun `c-flow-sequence`(n: Int, c: Context) = wrapTokens(
+    Code.BeginSequence, Code.EndSequence, (`c-sequence-start` cmt "node") and
+            opt(`s-separate`(n, c)) and opt(`ns-s-flow-seq-entries`(n, `in-flow`(c))) and `c-sequence-end`
+)
 
 /**
  * [138] ns-s-flow-seq-entries(n,c) ::= ns-flow-seq-entry(n,c) s-separate(n,c)?
@@ -944,8 +964,10 @@ fun `ns-flow-seq-entry`(n: Int, c: Context) = "pair" cho (`ns-flow-pair`(n, c) o
  * [140] c-flow-mapping(n,c) ::= “{” s-separate(n,c)?
  *                               ns-s-flow-map-entries(n,in-flow(c))? “}”
  */
-fun `c-flow-mapping`(n: Int, c: Context) = wrapTokens(Code.BeginMapping, Code.EndMapping, (`c-mapping-start` cmt "node") and
-        opt(`s-separate`(n, c)) and opt(`ns-s-flow-map-entries`(n, `in-flow`(c))) and `c-mapping-end`)
+fun `c-flow-mapping`(n: Int, c: Context) = wrapTokens(
+    Code.BeginMapping, Code.EndMapping, (`c-mapping-start` cmt "node") and
+            opt(`s-separate`(n, c)) and opt(`ns-s-flow-map-entries`(n, `in-flow`(c))) and `c-mapping-end`
+)
 
 /**
  * [141] ns-s-flow-map-entries(n,c) ::= ns-flow-map-entry(n,c) s-separate(n,c)?
@@ -960,8 +982,10 @@ fun `ns-s-flow-map-entries`(n: Int, c: Context): Parser = `ns-flow-map-entry`(n,
  *                                      ns-flow-map-explicit-entry(n,c) )
  *                                 | ns-flow-map-implicit-entry(n,c)
  */
-fun `ns-flow-map-entry`(n: Int, c: Context) = wrapTokens(Code.BeginPair, Code.EndPair, "key" cho (((`c-mapping-key` cmt "key") and
-        `s-separate`(n, c) and `ns-flow-map-explicit-entry`(n, c)) or `ns-flow-map-implicit-entry`(n, c)))
+fun `ns-flow-map-entry`(n: Int, c: Context) = wrapTokens(
+    Code.BeginPair, Code.EndPair, "key" cho (((`c-mapping-key` cmt "key") and
+            `s-separate`(n, c) and `ns-flow-map-explicit-entry`(n, c)) or `ns-flow-map-implicit-entry`(n, c))
+)
 
 /**
  * [143] ns-flow-map-explicit-entry(n,c) ::=  ns-flow-map-implicit-entry(n,c)
@@ -1024,8 +1048,15 @@ fun `c-ns-flow-map-adjacent-value`(n: Int, c: Context) = (`c-mapping-value` cmt 
  *                                  ns-flow-map-explicit-entry(n,c) )
  *                            | ns-flow-pair-entry(n,c)
  */
-fun `ns-flow-pair`(n: Int, c: Context) = wrapTokens(Code.BeginMapping, Code.EndMapping, wrapTokens(Code.BeginPair, Code.EndPair,
-        ((`c-mapping-key` cmt "pair") and `s-separate`(n, c) and `ns-flow-map-explicit-entry`(n, c)) or `ns-flow-pair-entry`(n, c)))
+fun `ns-flow-pair`(n: Int, c: Context) = wrapTokens(
+    Code.BeginMapping, Code.EndMapping, wrapTokens(
+        Code.BeginPair, Code.EndPair,
+        ((`c-mapping-key` cmt "pair") and `s-separate`(n, c) and `ns-flow-map-explicit-entry`(
+            n,
+            c
+        )) or `ns-flow-pair-entry`(n, c)
+    )
+)
 
 /**
  * [151] ns-flow-pair-entry(n,c) ::=  ns-flow-pair-yaml-key-entry(n,c)
@@ -1047,19 +1078,22 @@ fun `ns-flow-pair-yaml-key-entry`(n: Int, c: Context) = `ns-s-implicit-yaml-key`
  * [153] c-ns-flow-pair-json-key-entry(n,c) ::= c-s-implicit-json-key(flow-key)
  *                                              c-ns-flow-map-adjacent-value(n,c)
  */
-fun `c-ns-flow-pair-json-key-entry`(n: Int, c: Context) = `c-s-implicit-json-key`(Context.FlowKey) and `c-ns-flow-map-adjacent-value`(n, c)
+fun `c-ns-flow-pair-json-key-entry`(n: Int, c: Context) =
+    `c-s-implicit-json-key`(Context.FlowKey) and `c-ns-flow-map-adjacent-value`(n, c)
 
 /**
  * [154] ns-s-implicit-yaml-key(c) ::= ns-flow-yaml-node(n/a,c) s-separate-in-line?
  *                                     /* At most 1024 characters altogether */
  */
-fun `ns-s-implicit-yaml-key`(c: Context) = limitedTo("node" cho `ns-flow-yaml-node`(-1, c) and opt(`s-separate-in-line`), 1024)
+fun `ns-s-implicit-yaml-key`(c: Context) =
+    limitedTo("node" cho `ns-flow-yaml-node`(-1, c) and opt(`s-separate-in-line`), 1024)
 
 /**
  * [155] c-s-implicit-json-key(c) ::= c-flow-json-node(n/a,c) s-separate-in-line?
  *                                    /* At most 1024 characters altogether */
  */
-fun `c-s-implicit-json-key`(c: Context) = limitedTo("node" cho `c-flow-json-node`(-1, c) and opt(`s-separate-in-line`), 1024)
+fun `c-s-implicit-json-key`(c: Context) =
+    limitedTo("node" cho `c-flow-json-node`(-1, c) and opt(`s-separate-in-line`), 1024)
 // 7.5 Flow Nodes
 
 /**
@@ -1077,7 +1111,8 @@ fun `c-flow-json-content`(n: Int, c: Context) = { state: State -> `c-flow-sequen
 /**
  * [158] ns-flow-content(n,c) ::= ns-flow-yaml-content(n,c) | c-flow-json-content(n,c)
  */
-fun `ns-flow-content`(n: Int, c: Context) = `ns-flow-yaml-content`(n, c) or { state -> `c-flow-json-content`(n, c)(state) }
+fun `ns-flow-content`(n: Int, c: Context) =
+    `ns-flow-yaml-content`(n, c) or { state -> `c-flow-json-content`(n, c)(state) }
 
 /**
  * [159] ns-flow-yaml-node(n,c) ::=  c-ns-alias-node
@@ -1087,16 +1122,20 @@ fun `ns-flow-content`(n: Int, c: Context) = `ns-flow-yaml-content`(n, c) or { st
  *                                          ns-flow-yaml-content(n,c) )
  *                                      | e-scalar ) )
  */
-fun `ns-flow-yaml-node`(n: Int, c: Context) = wrapTokens(Code.BeginNode, Code.EndNode,
-        (`c-ns-alias-node` or `ns-flow-yaml-content`(n, c) or (`c-ns-properties`(n, c) and
-                ((`s-separate`(n, c) and `ns-flow-yaml-content`(n, c)) or `e-scalar`))))
+fun `ns-flow-yaml-node`(n: Int, c: Context) = wrapTokens(
+    Code.BeginNode, Code.EndNode,
+    (`c-ns-alias-node` or `ns-flow-yaml-content`(n, c) or (`c-ns-properties`(n, c) and
+            ((`s-separate`(n, c) and `ns-flow-yaml-content`(n, c)) or `e-scalar`)))
+)
 
 /**
  * [160] c-flow-json-node(n,c) ::= ( c-ns-properties(n,c) s-separate(n,c) )?
  *                                 c-flow-json-content(n,c)
  */
-fun `c-flow-json-node`(n: Int, c: Context) = wrapTokens(Code.BeginNode, Code.EndNode, opt(`c-ns-properties`(n, c) and
-        `s-separate`(n, c)) and { state -> `c-flow-json-content`(n, c)(state) })
+fun `c-flow-json-node`(n: Int, c: Context) = wrapTokens(Code.BeginNode, Code.EndNode, opt(
+    `c-ns-properties`(n, c) and
+            `s-separate`(n, c)
+) and { state -> `c-flow-json-content`(n, c)(state) })
 
 /**
  * [161] ns-flow-node(n,c) ::=  c-ns-alias-node
@@ -1106,8 +1145,10 @@ fun `c-flow-json-node`(n: Int, c: Context) = wrapTokens(Code.BeginNode, Code.End
  *                                  ns-flow-content(n,c) )
  *                                | e-scalar ) )
  */
-fun `ns-flow-node`(n: Int, c: Context) = wrapTokens(Code.BeginNode, Code.EndNode, (`c-ns-alias-node` or `ns-flow-content`(n, c) or
-        (`c-ns-properties`(n, c) and ((`s-separate`(n, c) and `ns-flow-content`(n, c)) or `e-scalar`))))
+fun `ns-flow-node`(n: Int, c: Context) = wrapTokens(
+    Code.BeginNode, Code.EndNode, (`c-ns-alias-node` or `ns-flow-content`(n, c) or
+            (`c-ns-properties`(n, c) and ((`s-separate`(n, c) and `ns-flow-content`(n, c)) or `e-scalar`)))
+)
 
 /**
  * 8.1.1 Block Scalar Headers
@@ -1120,9 +1161,14 @@ fun `ns-flow-node`(n: Int, c: Context) = wrapTokens(Code.BeginNode, Code.EndNode
  *                                     c-indentation-indicator(m) ) )
  *                                 s-b-comment
  */
-fun `c-b-block-header`(n: Int) = "header" cho (`c-indentation-indicator`(n).snd("m", `c-chomping-indicator`()).
-        snd("t", (`s-white` or `b-char`) omt "header") and `s-b-comment` and peekResult("m", "t") or
-        `c-chomping-indicator`().snd("t", `c-indentation-indicator`(n)).snd("m", `s-b-comment`) and peekResult("m", "t"))
+fun `c-b-block-header`(n: Int) = "header" cho (`c-indentation-indicator`(n).snd("m", `c-chomping-indicator`()).snd(
+    "t",
+    (`s-white` or `b-char`) omt "header"
+) and `s-b-comment` and peekResult("m", "t") or
+        `c-chomping-indicator`().snd("t", `c-indentation-indicator`(n)).snd("m", `s-b-comment`) and peekResult(
+    "m",
+    "t"
+))
 
 /**
  * 8.1.1.1 Block Indentation Indicator
@@ -1134,8 +1180,10 @@ fun `c-b-block-header`(n: Int) = "header" cho (`c-indentation-indicator`(n).snd(
  */
 fun `c-indentation-indicator`(n: Int) = indicator(`ns-dec-digit` not '0') and asInt() or `detect-scalar-indentation`(n)
 
-fun `detect-scalar-indentation`(n: Int) = peek(zom(`nb-char`) and
-        opt(`b-non-content` and zom(`l-empty`(n, Context.BlockIn))) and `count-spaces`(-n))
+fun `detect-scalar-indentation`(n: Int) = peek(
+    zom(`nb-char`) and
+            opt(`b-non-content` and zom(`l-empty`(n, Context.BlockIn))) and `count-spaces`(-n)
+)
 
 fun `count-spaces`(n: Int): Parser = (`s-space` and { state -> `count-spaces`(n + 1)(state) }) or result(Math.max(1, n))
 
@@ -1148,7 +1196,8 @@ fun `count-spaces`(n: Int): Parser = (`s-space` and { state -> `count-spaces`(n 
  *                                   “+”         ⇒ t = keep
  *                                   /* Empty */ ⇒ t = clip
  */
-fun `c-chomping-indicator`() = (indicator('-') and result(Chomp.Strip)) or (indicator('+') and result(Chomp.Keep)) or result(Chomp.Clip)
+fun `c-chomping-indicator`() =
+    (indicator('-') and result(Chomp.Strip)) or (indicator('+') and result(Chomp.Keep)) or result(Chomp.Clip)
 
 fun `end-block-scalar`(t: Chomp) = when (t) {
     Chomp.Strip -> emptyToken(Code.EndScalar)
@@ -1188,7 +1237,8 @@ fun `l-strip-empty`(n: Int) = zom(`s-indent-le`(n) and `b-non-content`) and opt(
  * [168] l-keep-empty(n) ::= l-empty(n,block-in)*
  *                           l-trail-comments(n)?
  */
-fun `l-keep-empty`(n: Int) = zom(`l-empty`(n, Context.BlockIn)) and emptyToken(Code.EndScalar) and opt(`l-trail-comments`(n))
+fun `l-keep-empty`(n: Int) =
+    zom(`l-empty`(n, Context.BlockIn)) and emptyToken(Code.EndScalar) and opt(`l-trail-comments`(n))
 
 /**
  * [169] l-trail-comments(n) ::= s-indent(<n) c-nb-comment-text b-comment
@@ -1259,7 +1309,8 @@ fun `s-nb-folded-text`(n: Int) = `s-indent`(n) and (`ns-char` cmt "fold") and zo
  * [176] l-nb-folded-lines(n) ::= s-nb-folded-text(n)
  *                                ( b-l-folded(n,block-in) s-nb-folded-text(n) )*
  */
-fun `l-nb-folded-lines`(n: Int) = `s-nb-folded-text`(n) and zom(`b-l-folded`(n, Context.BlockIn) and `s-nb-folded-text`(n))
+fun `l-nb-folded-lines`(n: Int) =
+    `s-nb-folded-text`(n) and zom(`b-l-folded`(n, Context.BlockIn) and `s-nb-folded-text`(n))
 
 /**
  * [177] s-nb-spaced-text(n) ::= s-indent(n) s-white nb-char*
@@ -1311,10 +1362,10 @@ val `detect-inline-indentation` = peek(`count-spaces`(0))
  *                               /* For some fixed auto-detected m > 0 */
  */
 fun `l+block-sequence`(n: Int) = `detect-collection-indentation`(n).snd("m",
-        wrapTokens(Code.BeginSequence, Code.EndSequence) { state ->
-            val m = state.yields["m"] as Int
-            oom(`s-indent`(n + m) and `c-l-block-seq-entry`(n + m))(state)
-        })
+    wrapTokens(Code.BeginSequence, Code.EndSequence) { state ->
+        val m = state.yields["m"] as Int
+        oom(`s-indent`(n + m) and `c-l-block-seq-entry`(n + m))(state)
+    })
 
 /**
  * [184] c-l-block-seq-entry(n) ::= “-” /* Not followed by an ns-char */
@@ -1331,17 +1382,21 @@ fun `c-l-block-seq-entry`(n: Int): Parser = `c-sequence-entry` and (nla(`ns-char
  *                                  | ( e-node s-l-comments )
  */
 fun `s-l+block-indented`(n: Int, c: Context): Parser = `detect-inline-indentation`.snd("m",
-        (("node" cho ({ state: State ->
-            val m = state.yields["m"] as Int
-            (`s-indent`(m) and (`ns-l-in-line-sequence`(n + 1 + m) or `ns-l-in-line-mapping`(n + 1 + m)))(state)
-        } or `s-l+block-node`(n, c) or `e-node` and opt(`s-l-comments`) and unparsed(n + 1))) recovery unparsed(n + 1)))
+    (("node" cho ({ state: State ->
+        val m = state.yields["m"] as Int
+        (`s-indent`(m) and (`ns-l-in-line-sequence`(n + 1 + m) or `ns-l-in-line-mapping`(n + 1 + m)))(state)
+    } or `s-l+block-node`(n, c) or `e-node` and opt(`s-l-comments`) and unparsed(n + 1))) recovery unparsed(n + 1)))
 
 /**
  * [186] ns-l-compact-sequence(n) ::= c-l-block-seq-entry(n)
  *                                    ( s-indent(n) c-l-block-seq-entry(n) )*
  */
-fun `ns-l-in-line-sequence`(n: Int) = wrapTokens(Code.BeginNode, Code.EndNode, wrapTokens(Code.BeginSequence, Code.EndSequence,
-        `c-l-block-seq-entry`(n) and zom(`s-indent`(n) and `c-l-block-seq-entry`(n))))
+fun `ns-l-in-line-sequence`(n: Int) = wrapTokens(
+    Code.BeginNode, Code.EndNode, wrapTokens(
+        Code.BeginSequence, Code.EndSequence,
+        `c-l-block-seq-entry`(n) and zom(`s-indent`(n) and `c-l-block-seq-entry`(n))
+    )
+)
 
 /**
  * 8.2.2 Block Mappings
@@ -1351,7 +1406,8 @@ fun `ns-l-in-line-sequence`(n: Int) = wrapTokens(Code.BeginNode, Code.EndNode, w
  * [187] l+block-mapping(n) ::= ( s-indent(n+m) ns-l-block-map-entry(n+m) )+
  *                              /* For some fixed auto-detected m > 0 */
  */
-fun `l+block-mapping`(n: Int) = `detect-collection-indentation`(n).snd("m", wrapTokens(Code.BeginMapping, Code.EndMapping
+fun `l+block-mapping`(n: Int) = `detect-collection-indentation`(n).snd("m", wrapTokens(
+    Code.BeginMapping, Code.EndMapping
 ) { state ->
     val m = state.yields["m"] as Int
     oom(`s-indent`(n + m) and `ns-l-block-map-entry`(n + m))(state)
@@ -1361,15 +1417,18 @@ fun `l+block-mapping`(n: Int) = `detect-collection-indentation`(n).snd("m", wrap
  * [188] ns-l-block-map-entry(n) ::=  c-l-block-map-explicit-entry(n)
  *                                  | ns-l-block-map-implicit-entry(n)
  */
-fun `ns-l-block-map-entry`(n: Int) = wrapTokens(Code.BeginPair, Code.EndPair, `c-l-block-map-explicit-entry`(n) or
-        `ns-l-block-map-implicit-entry`(n))
+fun `ns-l-block-map-entry`(n: Int) = wrapTokens(
+    Code.BeginPair, Code.EndPair, `c-l-block-map-explicit-entry`(n) or
+            `ns-l-block-map-implicit-entry`(n)
+)
 
 /**
  * [189] c-l-block-map-explicit-entry(n) ::= c-l-block-map-explicit-key(n)
  *                                           ( l-block-map-explicit-value(n)
  *                                           | e-node )
  */
-fun `c-l-block-map-explicit-entry`(n: Int) = `c-l-block-map-explicit-key`(n) and (`l-block-map-explicit-value`(n) or `e-node`)
+fun `c-l-block-map-explicit-entry`(n: Int) =
+    `c-l-block-map-explicit-key`(n) and (`l-block-map-explicit-value`(n) or `e-node`)
 
 /**
  * [190] c-l-block-map-explicit-key(n) ::= “?” s-l+block-indented(n,block-out)
@@ -1380,34 +1439,44 @@ fun `c-l-block-map-explicit-key`(n: Int) = (`c-mapping-key` cmt "node") and `s-l
  * [191] l-block-map-explicit-value(n) ::= s-indent(n)
  *                                         “:” s-l+block-indented(n,block-out)
  */
-fun `l-block-map-explicit-value`(n: Int) = `s-indent`(n) and `c-mapping-value` and `s-l+block-indented`(n, Context.BlockOut)
+fun `l-block-map-explicit-value`(n: Int) =
+    `s-indent`(n) and `c-mapping-value` and `s-l+block-indented`(n, Context.BlockOut)
 
 /**
  * [192] ns-l-block-map-implicit-entry(n) ::= ( ns-s-block-map-implicit-key
  *                                            | e-node )
  *                                            c-l-block-map-implicit-value(n)
  */
-fun `ns-l-block-map-implicit-entry`(n: Int) = (`ns-s-block-map-implicit-key`() or `e-node`) and `c-l-block-map-implicit-value`(n)
+fun `ns-l-block-map-implicit-entry`(n: Int) =
+    (`ns-s-block-map-implicit-key`() or `e-node`) and `c-l-block-map-implicit-value`(n)
 
 /**
  * [193] ns-s-block-map-implicit-key ::=  c-s-implicit-json-key(block-key)
  *                                      | ns-s-implicit-yaml-key(block-key)
  */
-fun `ns-s-block-map-implicit-key`() = `c-s-implicit-json-key`(Context.BlockKey) or `ns-s-implicit-yaml-key`(Context.BlockKey)
+fun `ns-s-block-map-implicit-key`() =
+    `c-s-implicit-json-key`(Context.BlockKey) or `ns-s-implicit-yaml-key`(Context.BlockKey)
 
 /**
  * [194] c-l-block-map-implicit-value(n) ::= “:” ( s-l+block-node(n,block-out)
  *                                               | ( e-node s-l-comments ) )
  */
 fun `c-l-block-map-implicit-value`(n: Int): Parser = (`c-mapping-value` cmt "node") and
-        ((`s-l+block-node`(n, Context.BlockOut) or `e-node` and opt(`s-l-comments`) and unparsed(n + 1)) recovery unparsed(n + 1))
+        ((`s-l+block-node`(
+            n,
+            Context.BlockOut
+        ) or `e-node` and opt(`s-l-comments`) and unparsed(n + 1)) recovery unparsed(n + 1))
 
 /**
  * [195] ns-l-compact-mapping(n) ::= ns-l-block-map-entry(n)
  *                                  ( s-indent(n) ns-l-block-map-entry(n) )*
  */
-fun `ns-l-in-line-mapping`(n: Int) = wrapTokens(Code.BeginNode, Code.EndNode, wrapTokens(Code.BeginMapping, Code.EndMapping,
-        `ns-l-block-map-entry`(n) and zom(`s-indent`(n) and `ns-l-block-map-entry`(n))))
+fun `ns-l-in-line-mapping`(n: Int) = wrapTokens(
+    Code.BeginNode, Code.EndNode, wrapTokens(
+        Code.BeginMapping, Code.EndMapping,
+        `ns-l-block-map-entry`(n) and zom(`s-indent`(n) and `ns-l-block-map-entry`(n))
+    )
+)
 
 /**
  * 8.2.3 Block Nodes
@@ -1431,12 +1500,14 @@ fun `s-l+block-node`(n: Int, c: Context) = `s-l+block-in-block`(n, c) or `s-l+fl
  * [197] s-l+flow-in-block(n) ::= s-separate(n+1,flow-out)
  *                                ns-flow-node(n+1,flow-out) s-l-comments
  */
-fun `s-l+flow-in-block`(n: Int) = `s-separate`(n + 1, Context.FlowOut) and `ns-flow-node`(n + 1, Context.FlowOut) and `s-l-comments`
+fun `s-l+flow-in-block`(n: Int) =
+    `s-separate`(n + 1, Context.FlowOut) and `ns-flow-node`(n + 1, Context.FlowOut) and `s-l-comments`
 
 /**
  * [198] s-l+block-in-block(n,c) ::= s-l+block-scalar(n,c) | s-l+block-collection(n,c)
  */
-fun `s-l+block-in-block`(n: Int, c: Context) = wrapTokens(Code.BeginNode, Code.EndNode, (`s-l+block-scalar`(n, c) or `s-l+block-collection`(n, c)))
+fun `s-l+block-in-block`(n: Int, c: Context) =
+    wrapTokens(Code.BeginNode, Code.EndNode, (`s-l+block-scalar`(n, c) or `s-l+block-collection`(n, c)))
 
 /**
  * [199] s-l+block-scalar(n,c) ::= s-separate(n+1,c)
@@ -1452,8 +1523,9 @@ fun `s-l+block-scalar`(n: Int, c: Context) = `s-separate`(n + 1, c) and
  *                                     ( l+block-sequence(seq-spaces(n,c))
  *                                     | l+block-mapping(n) )
  */
-fun `s-l+block-collection`(n: Int, c: Context) = opt(`s-separate`(n + 1, c) and (`c-ns-properties`(n + 1, c) and pla(`s-l-comments`))) and
-        (`s-l-comments`) and (`l+block-sequence`(`seq-spaces`(n, c)) or `l+block-mapping`(n))
+fun `s-l+block-collection`(n: Int, c: Context) =
+    opt(`s-separate`(n + 1, c) and (`c-ns-properties`(n + 1, c) and pla(`s-l-comments`))) and
+            (`s-l-comments`) and (`l+block-sequence`(`seq-spaces`(n, c)) or `l+block-mapping`(n))
 
 /**
  * [201] seq-spaces(n,c) ::= c = block-out ⇒ n-1
@@ -1539,8 +1611,10 @@ val `l-directives-document` = oom(`l-directive`) and `l-explicit-document`
  *                         | l-explicit-document
  *                         | l-bare-document
  */
-val `l-any-document` = wrapTokens(Code.BeginDocument, Code.EndDocument,
-        "doc" cho ((`l-directives-document` or `l-explicit-document` or `l-bare-document`) recovery unparsed(0)))
+val `l-any-document` = wrapTokens(
+    Code.BeginDocument, Code.EndDocument,
+    "doc" cho ((`l-directives-document` or `l-explicit-document` or `l-bare-document`) recovery unparsed(0))
+)
 
 /**
  * [211] l-yaml-stream ::= l-document-prefix* l-any-document?
@@ -1549,6 +1623,10 @@ val `l-any-document` = wrapTokens(Code.BeginDocument, Code.EndDocument,
  */
 val `l-yaml-stream` = zom(nonEmpty(`l-document-prefix`)) and
         (eof() or pla(`c-document-end` and (`b-char` or `s-white` or eof())) or `l-any-document`) and
-        zom(nonEmpty("more" cho (oom(`l-document-suffix` cmt "more") and zom(nonEmpty(`l-document-prefix`)) and
-                (eof() or `l-any-document`) or zom(nonEmpty(`l-document-prefix`)) and
-                ("doc" cho opt(wrapTokens(Code.BeginDocument, Code.EndDocument, `l-explicit-document`))))))
+        zom(
+            nonEmpty(
+                "more" cho (oom(`l-document-suffix` cmt "more") and zom(nonEmpty(`l-document-prefix`)) and
+                        (eof() or `l-any-document`) or zom(nonEmpty(`l-document-prefix`)) and
+                        ("doc" cho opt(wrapTokens(Code.BeginDocument, Code.EndDocument, `l-explicit-document`))))
+            )
+        )

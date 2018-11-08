@@ -8,7 +8,7 @@ import org.junit.Test
 
 class XtraTest {
 
-    val bytes = "-#".toByteArray()
+    private val bytes = "-#".toByteArray()
 
     @Test
     fun pattern() {

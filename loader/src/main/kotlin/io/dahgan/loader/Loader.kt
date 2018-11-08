@@ -86,7 +86,7 @@ private fun visitor(code: Code): Visitor = when (code) {
     else -> SKIP
 }
 
-abstract private class Context {
+private abstract class Context {
     protected val data: MutableList<Any> = ArrayList()
 
     fun add(any: Any) = data.add(any)

@@ -51,8 +51,10 @@ class ParserTokenizer(private val what: String, val parser: Parser) : Tokenizer 
 
             return when (reply.result) {
                 is Result.Failed -> errorTokens(tokens, rState, reply.result.message as String, withFollowing)
-                is Result.Completed -> tokens + Token(rState.byteOffset, rState.charOffset, rState.line,
-                        rState.lineChar, Code.Detected, Escapable.of("$what=${reply.result.result}"))
+                is Result.Completed -> tokens + Token(
+                    rState.byteOffset, rState.charOffset, rState.line,
+                    rState.lineChar, Code.Detected, Escapable.of("$what=${reply.result.result}")
+                )
                 is Result.More -> tokens + parserParser(reply.result.result, rState)
             }
         }
@@ -64,8 +66,10 @@ class ParserTokenizer(private val what: String, val parser: Parser) : Tokenizer 
 /**
  * Returns an initial 'State' for parsing the input (with name for error messages).
  */
-private fun initialState(name: String, input: ByteArray): State = State(name, Stream.of(input), "", -1, null, false,
-        true, intArrayOf(), -1, -1, -1, -1, 0, 0, 1, 0, Code.Unparsed, ' '.toInt(), HashMap())
+private fun initialState(name: String, input: ByteArray): State = State(
+    name, Stream.of(input), "", -1, null, false,
+    true, intArrayOf(), -1, -1, -1, -1, 0, 0, 1, 0, Code.Unparsed, ' '.toInt(), HashMap()
+)
 
 /**
  * Inserts an error token if a commit was made outside a named choice. This should never happen outside tests.
@@ -77,8 +81,10 @@ private fun commitBugs(reply: Reply): Sequence<Token> {
     return if (reply.commit == null)
         tokens
     else
-        tokens + Token(state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Error,
-                Escapable.of("Commit to '${reply.commit}' was made outside it"))
+        tokens + Token(
+            state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Error,
+            Escapable.of("Commit to '${reply.commit}' was made outside it")
+        )
 }
 
 /**
@@ -98,7 +104,14 @@ private fun errorTokens(tokens: Sequence<Token>, state: State, message: String, 
 
     return if (flag && state.input.isNotEmpty())
         newTokens +
-                Token(state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Unparsed, Escapable.of(state.input.codes()))
+                Token(
+                    state.byteOffset,
+                    state.charOffset,
+                    state.line,
+                    state.lineChar,
+                    Code.Unparsed,
+                    Escapable.of(state.input.codes())
+                )
     else
         newTokens
 }

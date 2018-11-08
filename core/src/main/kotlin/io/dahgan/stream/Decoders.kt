@@ -166,7 +166,7 @@ class UTF8Decoder : Decoder {
      * Combines the first and second bytes of a two-byte UTF-8 char into a single unicode char.
      */
     private fun combineTwoUTF8(first: Int, second: Int) =
-            (first - 0xC0) * 64 + (second - 0x80)
+        (first - 0xC0) * 64 + (second - 0x80)
 
     /**
      * Decodes a three-byte UTF-8 character,
@@ -192,7 +192,7 @@ class UTF8Decoder : Decoder {
      * Combines the first, second and third bytes of a three-byte UTF-8 char into a single unicode char.
      */
     private fun combineThreeUTF8(first: Int, second: Int, third: Int) =
-            (first - 0xE0) * 4096 + (second - 0x80) * 64 + (third - 0x80)
+        (first - 0xE0) * 4096 + (second - 0x80) * 64 + (third - 0x80)
 
     /**
      * Decodes a four-byte UTF-8 character, where the first byte is already available and the second, third and fourth
@@ -219,7 +219,7 @@ class UTF8Decoder : Decoder {
      * Combines the first, second, third and fourth bytes of a four-byte UTF-8 char into a single unicode char.
      */
     private fun combineFourUTF8(first: Int, second: Int, third: Int, fourth: Int) =
-            (first - 0xF0) * 262144 + (second - 0x80) * 4096 + (third - 0x80) * 64 + (fourth - 0x80)
+        (first - 0xF0) * 262144 + (second - 0x80) * 4096 + (third - 0x80) * 64 + (fourth - 0x80)
 }
 
 /**

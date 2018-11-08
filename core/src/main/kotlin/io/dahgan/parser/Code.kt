@@ -188,7 +188,7 @@ enum class Code(val code: String) {
     /**
      * Ends complete node
      */
-    EndNode ("n"),
+    EndNode("n"),
 
     /**
      * Begins document

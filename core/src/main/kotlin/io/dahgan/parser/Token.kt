@@ -12,35 +12,35 @@ package io.dahgan.parser
  * Parsed token.
  */
 data class Token(
-        /**
-         * 0-base byte offset in stream.
-         */
-        val byteOffset: Int,
+    /**
+     * 0-base byte offset in stream.
+     */
+    val byteOffset: Int,
 
-        /**
-         * 0-base character offset in stream.
-         */
-        val charOffset: Int,
+    /**
+     * 0-base character offset in stream.
+     */
+    val charOffset: Int,
 
-        /**
-         * 1-based line number.
-         */
-        val line: Int,
+    /**
+     * 1-based line number.
+     */
+    val line: Int,
 
-        /**
-         * 0-based character in line.
-         */
-        val lineChar: Int,
+    /**
+     * 0-based character in line.
+     */
+    val lineChar: Int,
 
-        /**
-         * Specific token 'Code'.
-         */
-        val code: Code,
+    /**
+     * Specific token 'Code'.
+     */
+    val code: Code,
 
-        /**
-         * Contained input chars, if any.
-         */
-        val text: Escapable
+    /**
+     * Contained input chars, if any.
+     */
+    val text: Escapable
 ) {
 
 
@@ -90,7 +90,7 @@ fun escape(text: IntArray, separator: String = ", "): String = text.joinToString
  * Converts the int to the specified number of hexadecimal digits.
  */
 fun toHex(digits: Int, n: Int): String =
-        if (digits == 1) "${intToDigit(n)}" else "${toHex(digits - 1, n / 16)}${intToDigit(n % 16)}"
+    if (digits == 1) "${intToDigit(n)}" else "${toHex(digits - 1, n / 16)}${intToDigit(n % 16)}"
 
 fun intToDigit(n: Int): Char = if (n < 10) (48 + n).toChar() else (87 + n).toChar()
 

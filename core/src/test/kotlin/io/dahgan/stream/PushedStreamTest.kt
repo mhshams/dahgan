@@ -9,7 +9,7 @@ import java.nio.charset.Charset
  */
 class PushedStreamTest {
     companion object {
-        val any: Int = 17
+        private const val any: Int = 17
         val head = UniChar(any, any)
 
         val defaultUTF32BE = ByteStream("Yaml".toByteArray(Charset.forName("UTF-32BE")))

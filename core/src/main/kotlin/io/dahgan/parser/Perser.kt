@@ -66,8 +66,10 @@ fun Parser.snd(name: String, other: Parser): Parser = { state ->
 
         when (reply.result) {
             is Failed -> reply.copy(result = Failed(reply.result.message))
-            is Completed -> reply.copy(result = More(right),
-                    state = reply.state.copy(yields = clone(state.yields, reply.result.result)))
+            is Completed -> reply.copy(
+                result = More(right),
+                state = reply.state.copy(yields = clone(state.yields, reply.result.result))
+            )
             is More -> reply.copy(result = More(bindParser(reply.result.result, right)))
         }
     }
@@ -175,10 +177,10 @@ fun failReply(state: State, message: Any): Reply = Reply(Failed(message), emptyS
  * Returns a failReply for an unexpected character.
  */
 fun unexpectedReply(state: State): Reply =
-        if (state.input.isEmpty())
-            failReply(state, "Unexpected end of input")
-        else
-            failReply(state, "Unexpected '${escape(state.input.head().code)}'")
+    if (state.input.isEmpty())
+        failReply(state, "Unexpected end of input")
+    else
+        failReply(state, "Unexpected '${escape(state.input.head().code)}'")
 
 /**
  * Fails with a message.
@@ -188,7 +190,7 @@ fun fail(message: Any): Parser = { state -> failReply(state, message) }
 /**
  * Succeeds if parser matches some non-empty input characters at this point.
  */
-fun nonEmpty(parser: Parser): Parser ={ state ->
+fun nonEmpty(parser: Parser): Parser = { state ->
     fun nonEmptyParser(offset: Int, parser: Parser): Parser = { state ->
         val reply = parser(state)
         val newSate = reply.state
@@ -222,8 +224,12 @@ fun sol(): Parser = { state -> if (state.isSol) returnReply(state, "") else fail
  * Any collected characters are cleared (either there are none, or we
  * put them in this token, or we don't want them).
  */
-fun tokenReply(state: State, token: Token): Reply = Reply(Completed(""), sequenceOf(token), null, state.
-        copy(chars = intArrayOf(), charsByteOffset = -1, charsCharOffset = -1, charsLine = -1, charsLineChar = -1))
+fun tokenReply(state: State, token: Token): Reply = Reply(
+    Completed(""),
+    sequenceOf(token),
+    null,
+    state.copy(chars = intArrayOf(), charsByteOffset = -1, charsCharOffset = -1, charsLine = -1, charsLineChar = -1)
+)
 
 /**
  * Places all collected text into a new token and begins a new
@@ -231,22 +237,26 @@ fun tokenReply(state: State, token: Token): Reply = Reply(Completed(""), sequenc
  */
 fun finishToken(): Parser = { state ->
     val newState = state.copy(
-            chars = IntArray(0),
-            charsByteOffset = -1,
-            charsCharOffset = -1,
-            charsLine = -1,
-            charsLineChar = -1)
+        chars = IntArray(0),
+        charsByteOffset = -1,
+        charsCharOffset = -1,
+        charsLine = -1,
+        charsLineChar = -1
+    )
 
     when {
         state.isPeek -> returnReply(newState, "")
         state.chars.isEmpty() -> returnReply(newState, "")
-        else -> tokenReply(newState, Token(
+        else -> tokenReply(
+            newState, Token(
                 state.charsByteOffset,
                 state.charsCharOffset,
                 state.charsLine,
                 state.charsLineChar,
                 state.code,
-                Escapable.of(state.chars.reversed().toIntArray())))
+                Escapable.of(state.chars.reversed().toIntArray())
+            )
+        )
     }
 }
 
@@ -255,10 +265,11 @@ fun finishToken(): Parser = { state ->
  * Note it collects the text even if there is an error.
  */
 fun token(code: Code, parser: Parser): Parser = finishToken() and with(
-        { state: State, c: Code? -> state.copy(code = c!!) },
-        State::code,
-        code,
-        parser and finishToken())
+    { state: State, c: Code? -> state.copy(code = c!!) },
+    State::code,
+    code,
+    parser and finishToken()
+)
 
 /**
  * Creates a token with the specified code and "fake"
@@ -268,14 +279,16 @@ fun fake(code: Code, text: Any): Parser = { state ->
     if (state.isPeek) {
         returnReply(state, "")
     } else {
-        tokenReply(state, Token(
+        tokenReply(
+            state, Token(
                 if (state.charsByteOffset == -1) state.byteOffset else state.charsByteOffset,
                 if (state.charsCharOffset == -1) state.charOffset else state.charsCharOffset,
                 if (state.charsLine == -1) state.line else state.charsLine,
                 if (state.charsLineChar == -1) state.lineChar else state.charsLineChar,
                 code,
                 Escapable.of(text.toString())
-        ))
+            )
+        )
     }
 }
 
@@ -323,7 +336,7 @@ fun emptyToken(code: Code): Parser = finishToken() and { state ->
  * Wraps the specified parser with matching beginCode and endCode tokens.
  */
 fun wrapTokens(beginCode: Code, endCode: Code, parser: Parser): Parser =
-        emptyToken(beginCode) and  prefixErrorWith(parser, emptyToken(endCode)) and emptyToken(endCode)
+    emptyToken(beginCode) and prefixErrorWith(parser, emptyToken(endCode)) and emptyToken(endCode)
 
 /**
  * Invokes the prefix parser if an error is detected during the pattern parser, and then return the error.
@@ -391,8 +404,10 @@ fun choice(decision: String, parser: Parser): Parser = { state ->
         }
 
         when (reply.result) {
-            is More -> reply.copy(commit = commit,
-                    result = More(choiceParser(parentDecision, makingDecision, reply.result.result)))
+            is More -> reply.copy(
+                commit = commit,
+                result = More(choiceParser(parentDecision, makingDecision, reply.result.result))
+            )
             else -> reply.copy(commit = commit, state = reply.state.copy(decision = parentDecision))
         }
     }
@@ -485,19 +500,21 @@ fun <T> with(set: (State, T?) -> State, get: (State) -> T, value: T?, parser: Pa
  * Parses the specified parser ensuring that it does not contain anything matching the forbidden parser.
  */
 fun forbidding(parser: Parser, forbidden: Parser): Parser = with(
-        { state: State, f: Parser? -> state.copy(forbidden = f) },
-        State::forbidden,
-        forbidden and empty(),
-        parser)
+    { state: State, f: Parser? -> state.copy(forbidden = f) },
+    State::forbidden,
+    forbidden and empty(),
+    parser
+)
 
 /**
  * Parses the specified parser ensuring that it does not consume more than the limit input chars.
  */
 fun limitedTo(parser: Parser, limit: Int): Parser = with(
-        { state: State, l: Int? -> state.copy(limit = l!!) },
-        State::limit,
-        limit,
-        parser)
+    { state: State, l: Int? -> state.copy(limit = l!!) },
+    State::limit,
+    limit,
+    parser
+)
 
 /**
  * Fails if the current position matches the 'State' forbidden
@@ -510,25 +527,28 @@ fun nextIf(test: (Int) -> Boolean): Parser {
             val char = state.input.head().code
             val chars = if (state.isPeek) IntArray(0) else intArrayOf(char) + state.chars
 
-            val byteOffset = if (state.isPeek) -1 else if (state.chars.isEmpty()) state.byteOffset else state.charsByteOffset
-            val charOffset = if (state.isPeek) -1 else if (state.chars.isEmpty()) state.charOffset else state.charsCharOffset
+            val byteOffset =
+                if (state.isPeek) -1 else if (state.chars.isEmpty()) state.byteOffset else state.charsByteOffset
+            val charOffset =
+                if (state.isPeek) -1 else if (state.chars.isEmpty()) state.charOffset else state.charsCharOffset
             val line = if (state.isPeek) -1 else if (state.chars.isEmpty()) state.line else state.charsLine
             val lineChar = if (state.isPeek) -1 else if (state.chars.isEmpty()) state.lineChar else state.charsLineChar
 
             val isSol = if (char == 0xFEFF) state.isSol else false
 
             val newState = state.copy(
-                    input = state.input.tail(),
-                    last = char,
-                    chars = chars,
-                    charsByteOffset = byteOffset,
-                    charsCharOffset = charOffset,
-                    charsLine = line,
-                    charsLineChar = lineChar,
-                    isSol = isSol,
-                    byteOffset = state.input.head().offset,
-                    charOffset = state.charOffset + 1,
-                    lineChar = state.lineChar + 1)
+                input = state.input.tail(),
+                last = char,
+                chars = chars,
+                charsByteOffset = byteOffset,
+                charsCharOffset = charOffset,
+                charsLine = line,
+                charsLineChar = lineChar,
+                isSol = isSol,
+                byteOffset = state.input.head().offset,
+                charOffset = state.charOffset + 1,
+                lineChar = state.lineChar + 1
+            )
 
             returnReply(newState, "")
         } else {
