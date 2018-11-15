@@ -9,11 +9,6 @@ interface Stream {
          * Creates a Stream with given input.
          */
         fun of(input: ByteArray): Stream = ByteStream(input)
-
-        /**
-         * Creates an empty Stream
-         */
-        fun empty(): Stream = ByteStream(byteArrayOf())
     }
 
     /**

@@ -7,7 +7,7 @@ import io.dahgan.stream.Stream
  * Invokes the parser and then consumes all remaining unparsed input characters.
  */
 private fun consume(parser: Parser): Parser {
-    val cleanInput = { state: State -> returnReply(state.copy(input = Stream.empty()), "") }
+    val cleanInput = { state: State -> returnReply(state.copy(input = Stream.of(byteArrayOf())), "") }
 
     return parser.snd("result", finishToken()) and cleanInput and peekResult("result")
 }

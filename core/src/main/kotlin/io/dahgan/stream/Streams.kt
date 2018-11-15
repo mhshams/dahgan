@@ -6,6 +6,7 @@ import java.util.*
  * Wraps the given byte arrays, detects its encoding and finally converts it to characters.
  */
 class ByteStream(private val input: ByteArray, private val offset: Int = 0) : Stream {
+
     companion object {
         private const val X00 = 0x00.toByte()
         private const val XFE = 0xFE.toByte()
@@ -45,47 +46,46 @@ class ByteStream(private val input: ByteArray, private val offset: Int = 0) : St
     /**
      * @see Stream#encoding()
      */
-    override fun encoding(): Encoding = encoding
+    override fun encoding() = encoding
 
     /**
      * @see Stream#head()
      */
-    override fun head(): UniChar = head
+    override fun head() = head
 
     /**
      * @see Stream#tail()
      */
-    override fun tail(): ByteStream = ByteStream(this.input, head.offset)
+    override fun tail() = ByteStream(this.input, head.offset)
 
     /**
      * @see Stream#isEmpty()
      */
-    override fun isEmpty(): Boolean = input.size <= offset
+    override fun isEmpty() = input.size <= offset
 
     /**
      * @see Stream#isNotEmpty()
      */
-    override fun isNotEmpty(): Boolean = !isEmpty()
+    override fun isNotEmpty() = !isEmpty()
 
     /**
      * @see Stream#push(head)
      */
-    override fun push(head: UniChar): Stream = PushedStream(head, this)
+    override fun push(head: UniChar) = PushedStream(head, this)
 
     /**
      * @see Stream#codes()
      */
-    override fun codes(): IntArray {
-        val destination = ArrayList<Int>()
+    override fun codes() = ArrayList<Int>().apply {
 
-        var current = this
+        var current = this@ByteStream
+
         while (current.isNotEmpty()) {
-            destination.add(current.head.code)
+            add(current.head.code)
             current = current.tail()
         }
 
-        return destination.toIntArray()
-    }
+    }.toIntArray()
 }
 
 /**
@@ -95,35 +95,35 @@ class PushedStream(private val head: UniChar, private val tail: Stream) : Stream
     /**
      * @see Stream#encoding()
      */
-    override fun encoding(): Encoding = tail.encoding()
+    override fun encoding() = tail.encoding()
 
     /**
      * @see Stream#head()
      */
-    override fun head(): UniChar = head
+    override fun head() = head
 
     /**
      * @see Stream#tail()
      */
-    override fun tail(): Stream = tail
+    override fun tail() = tail
 
     /**
      * @see Stream#isEmpty()
      */
-    override fun isEmpty(): Boolean = false
+    override fun isEmpty() = false
 
     /**
      * @see Stream#isNotEmpty()
      */
-    override fun isNotEmpty(): Boolean = true
+    override fun isNotEmpty() = true
 
     /**
      * @see Stream#push(head)
      */
-    override fun push(head: UniChar): Stream = PushedStream(head, this)
+    override fun push(head: UniChar) = PushedStream(head, this)
 
     /**
      * @see Stream#codes()
      */
-    override fun codes(): IntArray = intArrayOf(head.code, *tail.codes())
+    override fun codes() = intArrayOf(head.code, *tail.codes())
 }

@@ -3,8 +3,7 @@ package io.dahgan.stream
 /**
  * Decodes a UTF-32 (LE or BE) byte array to unicode characters.
  */
-class UTF32Decoder
-private constructor(val combine: (Int, Int, Int, Int) -> Int) : Decoder {
+class UTF32Decoder private constructor(val combine: (Int, Int, Int, Int) -> Int) : Decoder {
 
     companion object {
         /**
@@ -46,8 +45,7 @@ private constructor(val combine: (Int, Int, Int, Int) -> Int) : Decoder {
 /**
  * Decodes a UTF-16 (LE or BE) byte array to unicode characters.
  */
-class UTF16Decoder
-private constructor(val combine: (Int, Int) -> Int) : Decoder {
+class UTF16Decoder private constructor(val combine: (Int, Int) -> Int) : Decoder {
 
     companion object {
         /**

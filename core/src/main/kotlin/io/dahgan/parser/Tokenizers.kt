@@ -4,8 +4,8 @@ import io.dahgan.stream.Stream
 import java.util.*
 
 /**
- * 'Tokenizer' converts a (named) input text into a list of 'Token'. Errors
- * are reported as tokens with the Error 'Code', and the unparsed text
+ * 'Tokenizer' converts a (named) input text into a list of 'Token'.
+ * Errors are reported as tokens with the Error 'Code', and the unparsed text
  * following an error may be attached as a final token (if the withFollowing is true).
  */
 interface Tokenizer {
@@ -25,9 +25,17 @@ class PatternTokenizer(private val pattern: Parser) : Tokenizer {
             val rState = reply.state
 
             return when (reply.result) {
-                is Result.Failed -> errorTokens(tokens, rState, reply.result.message as String, withFollowing)
-                is Result.Completed -> tokens
-                is Result.More -> tokens + patternParser(reply.result.result, rState)
+                is Result.Failed ->
+                    errorTokens(
+                        tokens = tokens,
+                        state = rState,
+                        message = reply.result.message as String,
+                        flag = withFollowing
+                    )
+                is Result.Completed ->
+                    tokens
+                is Result.More ->
+                    tokens + patternParser(reply.result.result, rState)
             }
         }
 
@@ -36,26 +44,39 @@ class PatternTokenizer(private val pattern: Parser) : Tokenizer {
 }
 
 /**
- * Converts the parser returning parser to a
- * simple 'Tokenizer' (only used for tests). The result is reported as a token
- * with the Detected 'Code' The result is reported as a token with the Detected 'Code'.
+ * Converts the parser returning parser to a simple 'Tokenizer' (only used for tests).
+ * The result is reported as a token with the Detected 'Code'.
  */
 class ParserTokenizer(private val what: String, val parser: Parser) : Tokenizer {
 
     override fun tokenize(name: String, input: ByteArray, withFollowing: Boolean): Sequence<Token> {
 
         fun parserParser(parser: Parser, state: State): Sequence<Token> {
+
             val reply = parser(state)
             val tokens = commitBugs(reply)
             val rState = reply.state
 
             return when (reply.result) {
-                is Result.Failed -> errorTokens(tokens, rState, reply.result.message as String, withFollowing)
-                is Result.Completed -> tokens + Token(
-                    rState.byteOffset, rState.charOffset, rState.line,
-                    rState.lineChar, Code.Detected, Escapable.of("$what=${reply.result.result}")
-                )
-                is Result.More -> tokens + parserParser(reply.result.result, rState)
+                is Result.Failed ->
+                    errorTokens(
+                        tokens = tokens,
+                        state = rState,
+                        message = reply.result.message as String,
+                        flag = withFollowing
+                    )
+                is Result.Completed ->
+                    tokens +
+                            Token(
+                                byteOffset = rState.byteOffset,
+                                charOffset = rState.charOffset,
+                                line = rState.line,
+                                lineChar = rState.lineChar,
+                                code = Code.Detected,
+                                text = Escapable.of("$what=${reply.result.result}")
+                            )
+                is Result.More ->
+                    tokens + parserParser(reply.result.result, rState)
             }
         }
 
@@ -66,10 +87,28 @@ class ParserTokenizer(private val what: String, val parser: Parser) : Tokenizer 
 /**
  * Returns an initial 'State' for parsing the input (with name for error messages).
  */
-private fun initialState(name: String, input: ByteArray): State = State(
-    name, Stream.of(input), "", -1, null, false,
-    true, intArrayOf(), -1, -1, -1, -1, 0, 0, 1, 0, Code.Unparsed, ' '.toInt(), HashMap()
-)
+private fun initialState(name: String, input: ByteArray): State =
+    State(
+        name = name,
+        input = Stream.of(input),
+        decision = "",
+        limit = -1,
+        forbidden = null,
+        isPeek = false,
+        isSol = true,
+        chars = intArrayOf(),
+        charsByteOffset = -1,
+        charsCharOffset = -1,
+        charsLine = -1,
+        charsLineChar = -1,
+        byteOffset = 0,
+        charOffset = 0,
+        line = 1,
+        lineChar = 0,
+        code = Code.Unparsed,
+        last = ' '.toInt(),
+        yields = HashMap()
+    )
 
 /**
  * Inserts an error token if a commit was made outside a named choice. This should never happen outside tests.
@@ -81,10 +120,15 @@ private fun commitBugs(reply: Reply): Sequence<Token> {
     return if (reply.commit == null)
         tokens
     else
-        tokens + Token(
-            state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Error,
-            Escapable.of("Commit to '${reply.commit}' was made outside it")
-        )
+        tokens +
+                Token(
+                    byteOffset = state.byteOffset,
+                    charOffset = state.charOffset,
+                    line = state.line,
+                    lineChar = state.lineChar,
+                    code = Code.Error,
+                    text = Escapable.of("Commit to '${reply.commit}' was made outside it")
+                )
 }
 
 /**
@@ -92,25 +136,39 @@ private fun commitBugs(reply: Reply): Sequence<Token> {
  * are wrapped into a token (only happens when testing productions), ensures no
  * input is left unparsed, and returns the parser's result.
  */
-private fun wrap(parser: Parser): Parser = parser.snd("result", finishToken()) and eof() and peekResult("result")
+private fun wrap(parser: Parser): Parser =
+    parser.snd("result", finishToken()) and eof() and peekResult("result")
 
 /**
- * Appends an Error token with the specified message at the end of tokens, and if withFollowing
+ * Appends an Error token with the specified message to the end of tokens, and if withFollowing
  * also appends the unparsed text following the error as a final Unparsed token.
  */
-private fun errorTokens(tokens: Sequence<Token>, state: State, message: String, flag: Boolean): Sequence<Token> {
+private fun errorTokens(
+    tokens: Sequence<Token>,
+    state: State,
+    message: String,
+    flag: Boolean
+): Sequence<Token> {
+
     val newTokens = tokens +
-            Token(state.byteOffset, state.charOffset, state.line, state.lineChar, Code.Error, Escapable.of(message))
+            Token(
+                byteOffset = state.byteOffset,
+                charOffset = state.charOffset,
+                line = state.line,
+                lineChar = state.lineChar,
+                code = Code.Error,
+                text = Escapable.of(message)
+            )
 
     return if (flag && state.input.isNotEmpty())
         newTokens +
                 Token(
-                    state.byteOffset,
-                    state.charOffset,
-                    state.line,
-                    state.lineChar,
-                    Code.Unparsed,
-                    Escapable.of(state.input.codes())
+                    byteOffset = state.byteOffset,
+                    charOffset = state.charOffset,
+                    line = state.line,
+                    lineChar = state.lineChar,
+                    code = Code.Unparsed,
+                    text = Escapable.of(state.input.codes())
                 )
     else
         newTokens
