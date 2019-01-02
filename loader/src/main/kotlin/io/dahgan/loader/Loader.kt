@@ -1,5 +1,7 @@
 package io.dahgan.loader
 
+import io.dahgan.loader.EndOfLineVisitor.LineFeedVisitor
+import io.dahgan.loader.EndOfLineVisitor.LineFoldVisitor
 import io.dahgan.parser.Code
 import io.dahgan.parser.Token
 import io.dahgan.yaml
@@ -45,8 +47,9 @@ fun loadAll(bytes: ByteArray): List<Any> = load(yaml().tokenize("load-all", byte
 private fun load(tokens: Sequence<Token>): List<Any> {
     val anchors = HashMap<String, Any>()
 
-    val context = Stack<Context>()
-    context.push(ListContext())
+    val context = Stack<Context>().apply {
+        push(ListContext())
+    }
 
     tokens.forEach {
         visitor(it.code).visit(anchors, context, it)
@@ -60,30 +63,30 @@ private fun load(tokens: Sequence<Token>): List<Any> {
 }
 
 private fun visitor(code: Code): Visitor = when (code) {
-    Code.Text -> TextVisitor()
-    Code.Meta -> TextVisitor()
-    Code.LineFeed -> EndOfLineVisitor("\n")
-    Code.LineFold -> EndOfLineVisitor(" ")
-    Code.BeginComment -> BeginIgnoreVisitor()
-    Code.EndComment -> EndIgnoreVisitor()
-    Code.BeginAnchor -> BeginVisitor(SingleContext())
-    Code.EndAnchor -> EndVisitor()
-    Code.BeginAlias -> BeginVisitor(SingleContext())
-    Code.EndAlias -> EndAliasVisitor()
-    Code.BeginScalar -> BeginVisitor(ScalarContext())
-    Code.EndScalar -> EndVisitor()
-    Code.BeginSequence -> BeginVisitor(ListContext())
-    Code.EndSequence -> EndVisitor()
-    Code.BeginMapping -> BeginVisitor(MapContext())
-    Code.EndMapping -> EndVisitor()
-    Code.BeginPair -> BeginVisitor(PairContext())
-    Code.EndPair -> EndVisitor()
-    Code.BeginNode -> BeginVisitor(NodeContext())
-    Code.EndNode -> EndNodeVisitor()
-    Code.BeginDocument -> BeginVisitor(SingleContext())
-    Code.EndDocument -> EndVisitor()
-    Code.Error -> ErrorVisitor()
-    else -> SKIP
+    Code.Text -> TextVisitor
+    Code.Meta -> TextVisitor
+    Code.LineFeed -> LineFeedVisitor
+    Code.LineFold -> LineFoldVisitor
+    Code.BeginComment -> BeginIgnoreVisitor
+    Code.EndComment -> EndIgnoreVisitor
+    Code.BeginAnchor -> Begin(SingleContext())
+    Code.EndAnchor -> EndVisitor
+    Code.BeginAlias -> Begin(SingleContext())
+    Code.EndAlias -> EndAliasVisitor
+    Code.BeginScalar -> Begin(ScalarContext())
+    Code.EndScalar -> EndVisitor
+    Code.BeginSequence -> Begin(ListContext())
+    Code.EndSequence -> EndVisitor
+    Code.BeginMapping -> Begin(MapContext())
+    Code.EndMapping -> EndVisitor
+    Code.BeginPair -> Begin(PairContext())
+    Code.EndPair -> EndVisitor
+    Code.BeginNode -> Begin(NodeContext())
+    Code.EndNode -> EndNodeVisitor
+    Code.BeginDocument -> Begin(SingleContext())
+    Code.EndDocument -> EndVisitor
+    Code.Error -> ErrorVisitor
+    else -> SkipVisitor
 }
 
 private abstract class Context {
@@ -111,7 +114,7 @@ private class ListContext : Context() {
 }
 
 private class MapContext : Context() {
-    override fun peek(): Any = data.filterIsInstance<Pair<*, *>>().toMap()
+    override fun peek(): Any = (data as List<Pair<*, *>>).toMap()
 }
 
 private class PairContext : Context() {
@@ -122,13 +125,13 @@ private interface Visitor {
     fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token)
 }
 
-private class BeginVisitor(val context: Context) : Visitor {
+private class Begin(val context: Context) : Visitor {
     override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
         contexts.push(context)
     }
 }
 
-private class BeginIgnoreVisitor : Visitor {
+private object BeginIgnoreVisitor : Visitor {
     override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
         contexts.push(object : Context() {
             override fun peek(): Any = throw UnsupportedOperationException()
@@ -136,55 +139,59 @@ private class BeginIgnoreVisitor : Visitor {
     }
 }
 
-private class EndIgnoreVisitor : Visitor {
+private object EndIgnoreVisitor : Visitor {
     override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
         contexts.pop()
     }
 }
 
-private class EndVisitor : Visitor {
+private object EndVisitor : Visitor {
     override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
         val top = contexts.pop()
         contexts.peek().add(top.peek())
     }
 }
 
-private class EndNodeVisitor : Visitor {
+private object EndNodeVisitor : Visitor {
     override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
         val top = contexts.pop().peek() as Pair<Any, Any>
         if (top.first.toString().isNotEmpty()) {
-            anchors.put(top.first.toString(), top.second)
+            anchors[top.first.toString()] = top.second
         }
         contexts.peek().add(top.second)
     }
 }
 
-private class EndAliasVisitor : Visitor {
+private object EndAliasVisitor : Visitor {
     override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
         val top = contexts.pop()
         contexts.peek().add(anchors[top.peek().toString()]!!)
     }
 }
 
-private class TextVisitor : Visitor {
+private object TextVisitor : Visitor {
     override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
         contexts.peek().add(token.text.toString())
     }
 }
 
-private class EndOfLineVisitor(val join: String) : Visitor {
+private abstract class EndOfLineVisitor(val join: String) : Visitor {
     override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
         contexts.peek().add(join)
     }
+
+    object LineFoldVisitor : EndOfLineVisitor(" ")
+
+    object LineFeedVisitor : EndOfLineVisitor("\n")
 }
 
-private class ErrorVisitor : Visitor {
+private object ErrorVisitor : Visitor {
     override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
         throw IllegalStateException("${token.text} - Line #${token.line} , Character #${token.lineChar + 1}")
     }
 }
 
-private object SKIP : Visitor {
+private object SkipVisitor : Visitor {
     override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
         //do nothing
     }
