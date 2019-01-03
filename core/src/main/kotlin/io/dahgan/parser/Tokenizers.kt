@@ -9,7 +9,7 @@ import java.util.*
  * following an error may be attached as a final token (if the withFollowing is true).
  */
 interface Tokenizer {
-    fun tokenize(name: String, input: ByteArray, withFollowing: Boolean): Sequence<Token>
+    fun tokenize(name: String, input: ByteArray, withFollowing: Boolean): List<Token>
 }
 
 /**
@@ -17,9 +17,9 @@ interface Tokenizer {
  */
 class PatternTokenizer(private val pattern: Parser) : Tokenizer {
 
-    override fun tokenize(name: String, input: ByteArray, withFollowing: Boolean): Sequence<Token> {
+    override fun tokenize(name: String, input: ByteArray, withFollowing: Boolean): List<Token> {
 
-        fun patternParser(parser: Parser, state: State): Sequence<Token> {
+        fun patternParser(parser: Parser, state: State): List<Token> {
             val reply = parser(state)
             val tokens = commitBugs(reply)
             val rState = reply.state
@@ -49,9 +49,9 @@ class PatternTokenizer(private val pattern: Parser) : Tokenizer {
  */
 class ParserTokenizer(private val what: String, val parser: Parser) : Tokenizer {
 
-    override fun tokenize(name: String, input: ByteArray, withFollowing: Boolean): Sequence<Token> {
+    override fun tokenize(name: String, input: ByteArray, withFollowing: Boolean): List<Token> {
 
-        fun parserParser(parser: Parser, state: State): Sequence<Token> {
+        fun parserParser(parser: Parser, state: State): List<Token> {
 
             val reply = parser(state)
             val tokens = commitBugs(reply)
@@ -113,7 +113,7 @@ private fun initialState(name: String, input: ByteArray): State =
 /**
  * Inserts an error token if a commit was made outside a named choice. This should never happen outside tests.
  */
-private fun commitBugs(reply: Reply): Sequence<Token> {
+private fun commitBugs(reply: Reply): List<Token> {
     val tokens = reply.tokens
     val state = reply.state
 
@@ -144,11 +144,11 @@ private fun wrap(parser: Parser): Parser =
  * also appends the unparsed text following the error as a final Unparsed token.
  */
 private fun errorTokens(
-    tokens: Sequence<Token>,
+    tokens: List<Token>,
     state: State,
     message: String,
     flag: Boolean
-): Sequence<Token> {
+): List<Token> {
 
     val newTokens = tokens +
             Token(

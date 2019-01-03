@@ -166,12 +166,12 @@ infix fun Char.and(other: Parser): Parser = of(this) and other
 /**
  *  Prepares a 'Reply' with the specified state and result.
  */
-fun returnReply(state: State, result: Any): Reply = Reply(Completed(result), emptySequence(), null, state)
+fun returnReply(state: State, result: Any): Reply = Reply(Completed(result), emptyList(), null, state)
 
 /**
  * Prepares a 'Reply' with the specified state and error message.
  */
-fun failReply(state: State, message: Any): Reply = Reply(Failed(message), emptySequence(), null, state)
+fun failReply(state: State, message: Any): Reply = Reply(Failed(message), emptyList(), null, state)
 
 /**
  * Returns a failReply for an unexpected character.
@@ -226,7 +226,7 @@ fun sol(): Parser = { state -> if (state.isSol) returnReply(state, "") else fail
  */
 fun tokenReply(state: State, token: Token): Reply = Reply(
     Completed(""),
-    sequenceOf(token),
+    listOf(token),
     null,
     state.copy(chars = intArrayOf(), charsByteOffset = -1, charsCharOffset = -1, charsLine = -1, charsLineChar = -1)
 )
@@ -373,11 +373,11 @@ fun oom(parser: Parser): Parser = parser and zom(parser)
  * second, unless first has committed in which case is fails immediately.
  */
 fun decide(left: Parser, right: Parser): Parser = { state ->
-    fun decideParser(point: State, tokens: Sequence<Token>, left: Parser, right: Parser): Parser = { state ->
+    fun decideParser(point: State, tokens: List<Token>, left: Parser, right: Parser): Parser = { state ->
         val reply = left(state)
         val newTokens = tokens + reply.tokens
         when (reply.result) {
-            is Failed -> Reply(More(right), emptySequence(), null, point)
+            is Failed -> Reply(More(right), emptyList(), null, point)
             is Completed -> reply.copy(tokens = newTokens)
             is More ->
                 if (reply.commit != null)
@@ -387,7 +387,7 @@ fun decide(left: Parser, right: Parser): Parser = { state ->
         }
     }
 
-    decideParser(state, emptySequence(), left, right)(state)
+    decideParser(state, emptyList(), left, right)(state)
 }
 
 /**
@@ -471,7 +471,7 @@ fun upto(parser: Parser): Parser = zom(nla(parser) and nextIf { true })
  *  Commits the parser to all the decisions up to the most recent parent decision.
  *  This makes all tokens generated in this parsing path immediately available to the caller.
  */
-fun commit(decision: String): Parser = { state -> Reply(Completed(""), emptySequence(), decision, state) }
+fun commit(decision: String): Parser = { state -> Reply(Completed(""), emptyList(), decision, state) }
 
 /**
  * Increments line counter and resets lineChar.

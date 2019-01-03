@@ -44,18 +44,14 @@ fun loadAll(file: File): List<Any> = loadAll(file.readBytes())
  */
 fun loadAll(bytes: ByteArray): List<Any> = load(yaml().tokenize("load-all", bytes, false))
 
-private fun load(tokens: Sequence<Token>): List<Any> {
-    val anchors = HashMap<String, Any>()
-
-    val context = Stack<Context>().apply {
-        push(ListContext())
-    }
+private fun load(tokens: List<Token>): List<Any> {
+    val contexts = LoaderStack()
 
     tokens.forEach {
-        visitor(it.code).visit(anchors, context, it)
+        visitor(it.code).visit(contexts, it)
     }
 
-    val result = context.pop().peek()
+    val result = contexts.pop().take()
     if (result is List<*>) {
         return result as List<Any>
     }
@@ -94,90 +90,90 @@ private abstract class Context {
 
     fun add(any: Any) = data.add(any)
 
-    abstract fun peek(): Any
+    abstract fun take(): Any
 }
 
 private class SingleContext : Context() {
-    override fun peek(): Any = data.first()
+    override fun take(): Any = data.first()
 }
 
 private class ScalarContext : Context() {
-    override fun peek(): Any = data.joinToString("")
+    override fun take(): Any = data.joinToString("")
 }
 
 private class NodeContext : Context() {
-    override fun peek(): Any = if (data.size > 1) Pair(data.first(), data[1]) else Pair("", data.first())
+    override fun take(): Any = if (data.size > 1) Pair(data.first(), data[1]) else Pair("", data.first())
 }
 
 private class ListContext : Context() {
-    override fun peek(): Any = data
+    override fun take(): Any = data
 }
 
 private class MapContext : Context() {
-    override fun peek(): Any = (data as List<Pair<*, *>>).toMap()
+    override fun take(): Any = (data as List<Pair<*, *>>).toMap()
 }
 
 private class PairContext : Context() {
-    override fun peek(): Any = Pair(data[0], data[1])
+    override fun take(): Any = Pair(data[0], data[1])
 }
 
 private interface Visitor {
-    fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token)
+    fun visit(stack: LoaderStack, token: Token)
 }
 
 private class Begin(val context: Context) : Visitor {
-    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
-        contexts.push(context)
+    override fun visit(stack: LoaderStack, token: Token) {
+        stack.push(context)
     }
 }
 
 private object BeginIgnoreVisitor : Visitor {
-    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
-        contexts.push(object : Context() {
-            override fun peek(): Any = throw UnsupportedOperationException()
+    override fun visit(stack: LoaderStack, token: Token) {
+        stack.push(object : Context() {
+            override fun take(): Any = throw UnsupportedOperationException()
         })
     }
 }
 
 private object EndIgnoreVisitor : Visitor {
-    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
-        contexts.pop()
+    override fun visit(stack: LoaderStack, token: Token) {
+        stack.pop()
     }
 }
 
 private object EndVisitor : Visitor {
-    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
-        val top = contexts.pop()
-        contexts.peek().add(top.peek())
+    override fun visit(stack: LoaderStack, token: Token) {
+        val top = stack.pop()
+        stack.peek().add(top.take())
     }
 }
 
 private object EndNodeVisitor : Visitor {
-    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
-        val top = contexts.pop().peek() as Pair<Any, Any>
+    override fun visit(stack: LoaderStack, token: Token) {
+        val top = stack.pop().take() as Pair<Any, Any>
         if (top.first.toString().isNotEmpty()) {
-            anchors[top.first.toString()] = top.second
+            stack.anchor(top.first.toString(), top.second)
         }
-        contexts.peek().add(top.second)
+        stack.peek().add(top.second)
     }
 }
 
 private object EndAliasVisitor : Visitor {
-    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
-        val top = contexts.pop()
-        contexts.peek().add(anchors[top.peek().toString()]!!)
+    override fun visit(stack: LoaderStack, token: Token) {
+        val top = stack.pop()
+        stack.peek().add(stack.anchor(top.take().toString()))
     }
 }
 
 private object TextVisitor : Visitor {
-    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
-        contexts.peek().add(token.text.toString())
+    override fun visit(stack: LoaderStack, token: Token) {
+        stack.peek().add(token.text.toString())
     }
 }
 
 private abstract class EndOfLineVisitor(val join: String) : Visitor {
-    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
-        contexts.peek().add(join)
+    override fun visit(stack: LoaderStack, token: Token) {
+        stack.peek().add(join)
     }
 
     object LineFoldVisitor : EndOfLineVisitor(" ")
@@ -186,13 +182,29 @@ private abstract class EndOfLineVisitor(val join: String) : Visitor {
 }
 
 private object ErrorVisitor : Visitor {
-    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
+    override fun visit(stack: LoaderStack, token: Token) {
         throw IllegalStateException("${token.text} - Line #${token.line} , Character #${token.lineChar + 1}")
     }
 }
 
 private object SkipVisitor : Visitor {
-    override fun visit(anchors: MutableMap<String, Any>, contexts: Stack<Context>, token: Token) {
-        //do nothing
-    }
+    override fun visit(stack: LoaderStack, token: Token) = Unit
+}
+
+
+private class LoaderStack {
+
+    private val contexts = mutableListOf<Context>(ListContext())
+
+    private val anchors = HashMap<String, Any>()
+
+    fun push(context: Context) = contexts.add(context)
+
+    fun peek() = contexts.last()
+
+    fun pop() = contexts.removeAt(contexts.lastIndex)
+
+    fun anchor(key: String, value: Any) = anchors.set(key, value)
+
+    fun anchor(key: String) = anchors[key]!!
 }
