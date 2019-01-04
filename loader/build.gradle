@@ -1,7 +1,7 @@
 description = 'Loader Module'
 
 dependencies {
-    implementation project(':core')
+    implementation project(':dahgan-core')
 
     testImplementation('com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.9.8')
     testImplementation('com.fasterxml.jackson.core:jackson-databind:2.9.8')

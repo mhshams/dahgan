@@ -1,5 +1,7 @@
 rootProject.name = "dahgan"
 
-include 'core'
-include 'loader'
+include 'core', 'loader'
+
+project(":core").name = "dahgan-core"
+project(":loader").name = "dahgan-loader"
 
