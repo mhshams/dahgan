@@ -1,0 +1,5 @@
+rootProject.name = "dahgan"
+
+include 'core'
+include 'loader'
+

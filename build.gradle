@@ -1,0 +1,98 @@
+buildscript {
+    ext {
+        kotlin_version = '1.3.11'
+        junit_version = '4.12'
+    }
+
+    dependencies {
+        classpath 'io.github.robwin:jgitflow-gradle-plugin:0.6.0'
+    }
+}
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.3.11' apply false
+}
+
+allprojects {
+    group = 'com.github.mhshams'
+    version = '0.5.1-SNAPSHOT'
+
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
+    apply plugin: 'io.github.robwin.jgitflow'
+
+    publishing {
+        publications {
+            myPublication(MavenPublication) {
+                pom {
+                    name = 'Dahgan'
+                    description = 'A YAML Reference Implementation'
+                    url = 'https://github.com/kareez/dahgan'
+                    licenses {
+                        license {
+                            name = 'The Apache Software License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                            distribution = 'repo'
+                            comments = 'A business-friendly OSS license'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'mhshams'
+                            name = 'Mohammad Sarbandi'
+                            email = 'm.h.shams@gmail.com'
+                        }
+                    }
+                    scm {
+                        connection = 'scm:git:git@github.com:kareez/dahgan.git'
+                        developerConnection = 'scm:git:git@github.com:kareez/dahgan.git'
+                        url = 'git@github.com:kareez/dahgan.git'
+                    }
+                    distributionManagement {
+                        url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+                    }
+                }
+            }
+        }
+    }
+
+    signing {
+//        sign configurations.archives
+    }
+}
+
+subprojects {
+    apply plugin: 'kotlin'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+        testImplementation "junit:junit:$junit_version"
+    }
+
+    task sourceJar(type: Jar) {
+        classifier 'sources'
+        from sourceSets.main.allJava
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives jar
+        archives sourceJar
+        archives javadocJar
+    }
+    task copyTestResources(type: Copy) {
+        from "$projectDir/src/test/resources"
+        into "$buildDir/classes/kotlin/test"
+    }
+
+    processTestResources.dependsOn copyTestResources
+}
