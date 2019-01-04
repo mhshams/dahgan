@@ -10,7 +10,7 @@ import java.util.*
 typealias Parser = (State) -> Reply
 
 /**
- * Tries to parse this and failing that parses other, unless this has committed in which case is fails immediately.
+ * Tries to parse this and failing that parses other, unless this has committed in which case it fails immediately.
  */
 infix fun Parser.or(other: Parser): Parser = decide(this, other)
 
@@ -33,16 +33,12 @@ infix fun Parser.or(other: IntRange): Parser = decide(this, of(other))
  * Parsers this and if it succeeds, parses the other.
  */
 infix fun Parser.and(other: Parser): Parser = { state ->
-    fun bindParser(left: Parser, right: Parser): Parser = { state ->
-        val reply = left(state)
-        when (reply.result) {
-            is Failed -> reply.copy(result = Failed(reply.result.message))
-            is Completed -> reply.copy(result = More(right))
-            is More -> reply.copy(result = More(bindParser(reply.result.result, right)))
-        }
+    val reply = this(state)
+    when (reply.result) {
+        is Failed -> reply.copy(result = Failed(reply.result.message))
+        is Completed -> reply.copy(result = More(other))
+        is More -> reply.copy(result = More(reply.result.result.and(other)))
     }
-
-    bindParser(this, other)(state)
 }
 
 /**
@@ -370,20 +366,24 @@ fun oom(parser: Parser): Parser = parser and zom(parser)
 
 /**
  * Tries to parse first, and failing that parses
- * second, unless first has committed in which case is fails immediately.
+ * second, unless first has committed in which case it fails immediately.
  */
 fun decide(left: Parser, right: Parser): Parser = { state ->
     fun decideParser(point: State, tokens: List<Token>, left: Parser, right: Parser): Parser = { state ->
         val reply = left(state)
         val newTokens = tokens + reply.tokens
-        when (reply.result) {
-            is Failed -> Reply(More(right), emptyList(), null, point)
-            is Completed -> reply.copy(tokens = newTokens)
-            is More ->
-                if (reply.commit != null)
-                    reply.copy(tokens = newTokens, result = More(reply.result.result))
-                else
-                    decideParser(point, newTokens, reply.result.result, right)(reply.state)
+        when {
+            reply.result is Failed ->
+                Reply(
+                    result = More(right),
+                    tokens = emptyList(),
+                    commit = null,
+                    state = point
+                )
+            reply.result is More && reply.commit == null ->
+                decideParser(point, newTokens, reply.result.result, right)(reply.state)
+            else ->
+                reply.copy(tokens = newTokens)
         }
     }
 
@@ -629,7 +629,7 @@ fun plb(lookbehind: Parser): Parser = prev(lookbehind)
 
 /**
  * Matches the current point without consuming any characters,
- * if it matches the lookahead parser (positive lookahead)
+ * if it does no match the lookahead parser (positive lookahead)
  */
 fun pla(lookahead: Parser): Parser = peek(lookahead)
 

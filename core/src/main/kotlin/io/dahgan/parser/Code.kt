@@ -51,7 +51,7 @@ enum class Code(val code: String) {
     Indent("i"),
 
     /**
-     * Document start marker.
+     * Directives end marker.
      */
     DirectivesEnd("K"),
 

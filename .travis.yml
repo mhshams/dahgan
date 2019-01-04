@@ -1,7 +1,7 @@
 language: java
 
 jdk:
-  - openjdk8
+- openjdk8
 
 notifications:
   email: false
@@ -9,6 +9,6 @@ notifications:
 # whitelist
 branches:
   only:
-    - master
-    - develop
-    - /^issue-.*$/
+  - master
+  - develop
+  - /^issue-.*$/
