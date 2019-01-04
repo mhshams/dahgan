@@ -10,5 +10,3 @@ notifications:
 branches:
   only:
   - master
-  - develop
-  - /^issue-.*$/

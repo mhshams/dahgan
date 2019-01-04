@@ -3,7 +3,6 @@ A YAML 1.2 syntax parser written in [Kotlin](https://kotlinlang.org/)
 
 [![GitHub license](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style=flat)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Build Status - Master](https://travis-ci.org/kareez/dahgan.svg?branch=master)](https://travis-ci.org/kareez/dahgan)
-[![Build Status - Develop](https://travis-ci.org/kareez/dahgan.svg?branch=develop)](https://travis-ci.org/kareez/dahgan)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.mhshams/dahgan/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.mhshams/dahgan)
 
 ## About
